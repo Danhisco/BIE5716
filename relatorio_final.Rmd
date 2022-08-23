@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = FALSE)
 ```
 
 # 
-two competing species: A and B
+two competing species: A and B and
 
 ## Reactions
 
