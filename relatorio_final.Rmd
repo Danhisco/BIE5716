@@ -9,5 +9,8 @@ output: html_document
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
+# 
+two competing species: A and B
+
 ## Reactions
 
