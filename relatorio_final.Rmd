@@ -9,8 +9,24 @@ output: html_document
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
+```{r google docs management, eval=FALSE,include=FALSE}
+library(trackdown)
+# both overwrite: 
+# to update:
+upload_file(file ="relatorio_final.Rmd",
+            gpath = "mestrado/disciplinas/BIE5716/",
+            hide_code = TRUE)
+
+```
+
+
 # 
-two competing species: A and B and
+O modelo de crescimento exponencial incorpora um princípio fundamental da biologia que é o de que toda vida provem de outra e assim examina o comportamento de uma população que pode crescer sem limitação alguma. Ao incluir a influência que o aumento na densidade populacional pode ter na limitação do crescimento, o modelo logístico incorpora outro princípio fundamental da biologia que é o de que a perda do excedente de indvíduos esperado por um crescimento ilimitado possibilita a criação dos padrões de diversidade conhecidos. Caso uma população crescesse de forma exponencial todo o universo conhecido poderia estar colonizado por um único tipo de vida. Outro componente essencial da modulação do crescimento dos indivíduos é a interação com outras espécies. Aqui vamos explorar um modelo de competição de 2 populações com crescimento logístico.
+
+
+
+
+
 
 ## Reactions
 
