@@ -19,14 +19,64 @@ upload_file(file ="relatorio_final.Rmd",
 
 ```
 
+# Introdução
+O modelo de crescimento exponencial incorpora o princípio fundamental de que a vida provém de outra e assim examina o comportamento de uma população que pode crescer sem limitação alguma. Ao incluir a influência que o aumento na densidade populacional pode ter na limitação do crescimento, o modelo logístico incorpora outro princípio fundamental que é o da perda de excedente de indivíduos esperado por um crescimento ilimitado. Caso uma população crescesse de forma exponencial todo o universo conhecido poderia estar colonizado por um único tipo de vida. Outro componente essencial da modulação dos eventos demográficos é a interação com outras espécies. Aqui vamos explorar um modelo de competição de 2 populações em crescimento denso dependente, A e B.
 
-# 
-O modelo de crescimento exponencial incorpora um princípio fundamental da biologia que é o de que toda vida provem de outra e assim examina o comportamento de uma população que pode crescer sem limitação alguma. Ao incluir a influência que o aumento na densidade populacional pode ter na limitação do crescimento, o modelo logístico incorpora outro princípio fundamental da biologia que é o de que a perda do excedente de indvíduos esperado por um crescimento ilimitado possibilita a criação dos padrões de diversidade conhecidos. Caso uma população crescesse de forma exponencial todo o universo conhecido poderia estar colonizado por um único tipo de vida. Outro componente essencial da modulação do crescimento dos indivíduos é a interação com outras espécies. Aqui vamos explorar um modelo de competição de 2 populações com crescimento logístico.
-
-
+Vamos modelar o sistema usando um arcabouço de reações e difusão (Gillespie 1977) onde as reações individuais, microscópicas, são explicitadas com a intenção de descrever o comportamento macroscópico do sistema em termos do tamanho populacional das espécies.
+[INCLUIR UMA PARTE SOBRE DA ONDE VEM A CONCEITUALIZAÇÃO]
+As reações individuais consideradas estão descritas na figura 1. 
 
 
 
 
 ## Reactions
+
+## Master Equation
+
+$$
+\frac{\partial P(n,m,t)}{\partial t} = P(n+1,m) (n+1) (\delta_n + n \gamma_n / 2 + m C_{n})\\ + P(n-1,m) (n-1) \beta_n\\
++ P(n,m+1) (m+1) (\delta_m + m \gamma_m / 2 + n C_{m})\\ + P(n,m-1) (m-1) \beta_m\\
+- P(n,m)[n(\beta_n + \delta_n + (n-1) \gamma_n / 2 + m C_{n}) + m(\beta_m + \delta_m + (m-1) \gamma_m / 2 + n C_{m})]
+$$
+
+
+## The computacional model
+```{r}
+N0 = 25
+M0 = 25
+k_n = 50
+k_m = 50
+beta_n = 0.7/365.25
+beta_m = 0.7/365.25
+delta_n = 0.69/365.25
+delta_m = 0.69/365.25
+gamma_n = (beta_n - delta_n) / k_n # mean field approximation
+gamma_m = (beta_m - delta_m) / k_m # mean field approximation
+C_n = gamma_n
+C_m = gamma_m
+df_ab <- data.frame(n=N0,m=M0,t=0)
+df_t <- data.frame(n=c(1,-1,0,0),
+                   m=c(0,0,1,-1))
+while(df_ab[nrow(df_ab),"n"]!=0 & df_ab[nrow(df_ab),"m"] !=0){
+  # rate according to the reactions absolute rates
+  n_p = df_ab[nrow(df_ab),"n"] * beta_n
+  n_m = df_ab[nrow(df_ab),"n"] *(delta_n + (df_ab[nrow(df_ab),"n"]-1) * gamma_n/2 +  C_n * df_ab[nrow(df_ab),"m"])
+  m_p = df_ab[nrow(df_ab),"m"] * beta_m
+  m_m = df_ab[nrow(df_ab),"m"] *(delta_m + (df_ab[nrow(df_ab),"m"]-1) * gamma_m/2 +  C_m * df_ab[nrow(df_ab),"n"])
+  v_rates <- c(n_p,n_m,m_p,m_m)
+  # update
+  df_ab[nrow(df_ab)+1,] <- c(df_ab[nrow(df_ab),1:2] + df_t[sample(1:4,size = 1,prob=v_rates/sum(v_rates)),],
+                             df_ab[nrow(df_ab),"t"] - log(runif(1))/sum(v_rates))
+}
+library(tidyverse)
+df_ab |> 
+  pivot_longer(!t,names_to="populations",values_to = "abundance") |> 
+  ggplot(aes(y=abundance,x=t)) +
+  geom_hline(yintercept = 50,color="black",alpha=0.4,linetype='dashed')+
+  geom_line(aes(colour=populations)) +
+  scale_colour_brewer(palette = "Set1") +
+  labs(title = "Neutral competition") +
+  theme_bw()
+
+```
 
