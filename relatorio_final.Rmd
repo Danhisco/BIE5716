@@ -3,6 +3,8 @@ title: "Generalization of the stochastic logistic model to interspecific competi
 author: "Danilo Pereira Mori"
 date: "2022-08-20"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -34,41 +36,78 @@ As reações individuais consideradas estão descritas na figura 1.
 ## Master Equation
 
 $$
-\frac{\partial P(n,m,t)}{\partial t} = P(n+1,m) (n+1) (\delta_n + n \gamma_n / 2 + m C_{n})\\ + P(n-1,m) (n-1) \beta_n\\
-+ P(n,m+1) (m+1) (\delta_m + m \gamma_m / 2 + n C_{m})\\ + P(n,m-1) (m-1) \beta_m\\
+\frac{\partial P(n,m,t)}{\partial t} = \\
+P(n+1,m) (n+1) (\delta_n + n \gamma_n / 2 + m C_{n}) +\\ P(n-1,m) (n-1) \beta_n+\\ 
+P(n,m+1) (m+1) (\delta_m + m \gamma_m / 2 + n C_{m}) +\\ P(n,m-1) (m-1) \beta_m+\\
 - P(n,m)[n(\beta_n + \delta_n + (n-1) \gamma_n / 2 + m C_{n}) + m(\beta_m + \delta_m + (m-1) \gamma_m / 2 + n C_{m})]
 $$
 
-
 ## The computacional model
-```{r}
-N0 = 25
-M0 = 25
-k_n = 50
-k_m = 50
-beta_n = 0.7/365.25
-beta_m = 0.7/365.25
-delta_n = 0.69/365.25
-delta_m = 0.69/365.25
-gamma_n = (beta_n - delta_n) / k_n # mean field approximation
-gamma_m = (beta_m - delta_m) / k_m # mean field approximation
-C_n = gamma_n
-C_m = gamma_m
-df_ab <- data.frame(n=N0,m=M0,t=0)
-df_t <- data.frame(n=c(1,-1,0,0),
-                   m=c(0,0,1,-1))
-while(df_ab[nrow(df_ab),"n"]!=0 & df_ab[nrow(df_ab),"m"] !=0){
-  # rate according to the reactions absolute rates
-  n_p = df_ab[nrow(df_ab),"n"] * beta_n
-  n_m = df_ab[nrow(df_ab),"n"] *(delta_n + (df_ab[nrow(df_ab),"n"]-1) * gamma_n/2 +  C_n * df_ab[nrow(df_ab),"m"])
-  m_p = df_ab[nrow(df_ab),"m"] * beta_m
-  m_m = df_ab[nrow(df_ab),"m"] *(delta_m + (df_ab[nrow(df_ab),"m"]-1) * gamma_m/2 +  C_m * df_ab[nrow(df_ab),"n"])
-  v_rates <- c(n_p,n_m,m_p,m_m)
-  # update
-  df_ab[nrow(df_ab)+1,] <- c(df_ab[nrow(df_ab),1:2] + df_t[sample(1:4,size = 1,prob=v_rates/sum(v_rates)),],
-                             df_ab[nrow(df_ab),"t"] - log(runif(1))/sum(v_rates))
+  
+  
+```{r the computacional model,echo=TRUE,eval=TRUE}
+f_2sppSLV <- function(pars,replicas){
+ df_ab <- data.frame(n=pars$N0,m=pars$M0,t=0)
+ df_t <- data.frame(n=c(1,-1,0,0), # 4 possibles transitions:
+                    m=c(0,0,1,-1)) # n + 1, n - 1, m + 1, m - 1
+ f_loop <- function(){
+   while(df_ab[nrow(df_ab),"n"]!=0 & df_ab[nrow(df_ab),"m"] !=0){
+   v_rates <- c( 
+     n_p = df_ab[nrow(df_ab),"n"] * pars$beta_n,     # n+1
+     n_m = df_ab[nrow(df_ab),"n"] * (pars$delta_n +  # n-1
+                                       (df_ab[nrow(df_ab),"n"]-1) * pars$gamma_n/2 +  
+                                       pars$C_n * df_ab[nrow(df_ab),"m"]),
+     m_p = df_ab[nrow(df_ab),"m"] * pars$beta_m,     # m+1
+     m_m = df_ab[nrow(df_ab),"m"] *(pars$delta_m +   # m-1
+                                      (df_ab[nrow(df_ab),"m"]-1) * pars$gamma_m/2 +  
+                                      pars$C_m * df_ab[nrow(df_ab),"n"]))
+   v_Srates <- sum(v_rates)
+   # update
+   df_ab[nrow(df_ab)+1,] <- c(df_ab[nrow(df_ab),1:2] + df_t[sample(1:4,size = 1,prob=v_rates/v_Srates),],
+                              df_ab[nrow(df_ab),"t"] - log(runif(1))/v_Srates)
+   }
+   return(df_ab)
 }
+plyr::rdply(.n = replicas,f_loop())
+}
+```
+  
+    
+###  Desenho Experimental
+
+Dois eixos de variação:  
+
+1) tamanho populacional inicial da espécie invasora: 10% K até K
+  
+  
+2) assimetria competitiva: da equivalência até a dominância extrema da invasora  
+
+    
+```{r desenho expercimental, eval=FALSE}
+library(plyr)
+library(doMC)
 library(tidyverse)
+df_sim <- data.frame(N0=50, M0 = c(5,50),
+                     k_n = 50,k_m = 50,
+                     beta_n = 0.7/365.25,beta_m = 0.7/365.25,
+                     delta_n = 0.69/365.25,delta_m = 0.69/365.25) |> 
+  mutate(gamma_n = (beta_n - delta_n) / k_n,
+         gamma_m = (beta_m - delta_m) / k_m,
+         C_n = gamma_n,C_m = gamma_m)
+registerDoMC(2)
+df_replicas <- plyr::adply(df_sim,1,
+                           function(X) do.call("f_2sppSLV",list(pars=X,replicas=100)),
+                           .parallel = TRUE)
+write_csv(df_replicas,file="df_replicas.csv")
+```
+
+```{r}
+df_replicas |>
+  group_by(M0,.n) |>
+  slice_tail(n=1) |> 
+  mutate()
+  
+
 df_ab |> 
   pivot_longer(!t,names_to="populations",values_to = "abundance") |> 
   ggplot(aes(y=abundance,x=t)) +
