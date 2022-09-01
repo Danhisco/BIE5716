@@ -22,11 +22,11 @@ upload_file(file ="relatorio_final.Rmd",
 ```
 
 # Introdução
-O modelo de crescimento exponencial incorpora o princípio fundamental de que a vida provém de outra e assim examina o comportamento de uma população que pode crescer sem limitação alguma. Ao incluir a influência que o aumento na densidade populacional pode ter na limitação do crescimento, o modelo logístico incorpora outro princípio fundamental que é o da perda de excedente de indivíduos esperado por um crescimento ilimitado. Caso uma população crescesse de forma exponencial todo o universo conhecido poderia estar colonizado por um único tipo de vida. Outro componente essencial da modulação dos eventos demográficos é a interação com outras espécies. Aqui vamos explorar um modelo de competição de 2 populações em crescimento denso dependente, A e B.
+<!-- O modelo de crescimento exponencial incorpora o princípio fundamental de que a vida provém de outra e assim examina o comportamento de uma população que pode crescer sem limitação alguma. Ao incluir a influência que o aumento na densidade populacional pode ter na limitação do crescimento, o modelo logístico incorpora outro princípio fundamental que é o da perda de excedente de indivíduos esperado por um crescimento ilimitado. Caso uma população crescesse de forma exponencial todo o universo conhecido poderia estar colonizado por um único tipo de vida. Outro componente essencial da modulação dos eventos demográficos é a interação com outras espécies. Aqui vamos explorar um modelo de competição de 2 populações em crescimento denso dependente, A e B. -->
 
-Vamos modelar o sistema usando um arcabouço de reações e difusão (Gillespie 1977) onde as reações individuais, microscópicas, são explicitadas com a intenção de descrever o comportamento macroscópico do sistema em termos do tamanho populacional das espécies.
-[INCLUIR UMA PARTE SOBRE DA ONDE VEM A CONCEITUALIZAÇÃO]
-As reações individuais consideradas estão descritas na figura 1. 
+<!-- Vamos modelar o sistema usando um arcabouço de reações e difusão (Gillespie 1977) onde as reações individuais, microscópicas, são explicitadas com a intenção de descrever o comportamento macroscópico do sistema em termos do tamanho populacional das espécies. -->
+<!-- [INCLUIR UMA PARTE SOBRE DA ONDE VEM A CONCEITUALIZAÇÃO] -->
+<!-- As reações individuais consideradas estão descritas na figura 1.  -->
 
 
 
@@ -34,6 +34,20 @@ As reações individuais consideradas estão descritas na figura 1.
 ## Reactions
 
 ## Master Equation
+
+> 2 spp: n e m  
+> C = parâmetro de competição 
+  
+linha 1: probabilidade de n perder um indivíduo  
+  
+linha 2: probabilidade de n ganhar um indivíduo  
+  
+linha 3: probabilidade de m perder um indivíduo  
+  
+linha 4: probabilidade de m ganhar um indivíduo  
+  
+linha 5: probabilidade de nada acontecer  
+  
 
 $$
 \frac{\partial P(n,m,t)}{\partial t} = \\
@@ -46,21 +60,23 @@ $$
   
   
 ```{r the computacional model,echo=TRUE,eval=TRUE}
-f_2sppSLV <- function(pars,replicas){
- df_ab <- data.frame(n=pars$N0,m=pars$M0,t=0)
+f_2sppSLV <- function(N0,beta_n,delta_n,gamma_n,C_n,
+                      M0,beta_m,delta_m,gamma_m,C_m,
+                      replicas){
+ df_ab <- data.frame(n=N0,m=M0,t=0)
  df_t <- data.frame(n=c(1,-1,0,0), # 4 possibles transitions:
                     m=c(0,0,1,-1)) # n + 1, n - 1, m + 1, m - 1
  f_loop <- function(){
    while(df_ab[nrow(df_ab),"n"]!=0 & df_ab[nrow(df_ab),"m"] !=0){
    v_rates <- c( 
-     n_p = df_ab[nrow(df_ab),"n"] * pars$beta_n,     # n+1
-     n_m = df_ab[nrow(df_ab),"n"] * (pars$delta_n +  # n-1
-                                       (df_ab[nrow(df_ab),"n"]-1) * pars$gamma_n/2 +  
-                                       pars$C_n * df_ab[nrow(df_ab),"m"]),
-     m_p = df_ab[nrow(df_ab),"m"] * pars$beta_m,     # m+1
-     m_m = df_ab[nrow(df_ab),"m"] *(pars$delta_m +   # m-1
-                                      (df_ab[nrow(df_ab),"m"]-1) * pars$gamma_m/2 +  
-                                      pars$C_m * df_ab[nrow(df_ab),"n"]))
+     n_p = df_ab[nrow(df_ab),"n"] * beta_n,     # n+1
+     n_m = df_ab[nrow(df_ab),"n"] * (delta_n +  # n-1
+                                       (df_ab[nrow(df_ab),"n"]-1) * gamma_n/2 +
+                                       C_n * df_ab[nrow(df_ab),"m"]),
+     m_p = df_ab[nrow(df_ab),"m"] * beta_m,     # m+1
+     m_m = df_ab[nrow(df_ab),"m"] *(delta_m +   # m-1
+                                      (df_ab[nrow(df_ab),"m"]-1) * gamma_m/2 +  
+                                      C_m * df_ab[nrow(df_ab),"n"]))
    v_Srates <- sum(v_rates)
    # update
    df_ab[nrow(df_ab)+1,] <- c(df_ab[nrow(df_ab),1:2] + df_t[sample(1:4,size = 1,prob=v_rates/v_Srates),],
@@ -71,37 +87,50 @@ f_2sppSLV <- function(pars,replicas){
 plyr::rdply(.n = replicas,f_loop())
 }
 ```
-  
+
+
+### um exemplo neutro: uma réplica de n0 = m0 = 25; K = 50
+
+![exemplo de corrida neutra](/home/danilo/Documentos/mestrado_Ecologia/disciplinas/BIE5716/competicao_neutra.png)
+```{r time estimative, include=FALSE,echo=FALSE,eval=FALSE}
+f_2sppSLV(N0=50, beta_n = 0.7/365.25, delta_n = 0.69/365.25, gamma_n = (0.7/365.25 - 0.69/365.25)/50, C_n =  (0.7/365.25 - 0.69/365.25)/50,
+          M0=50, beta_m = 0.7/365.25, delta_m = 0.69/365.25, gamma_m = (0.7/365.25 - 0.69/365.25)/50, C_m =  (0.7/365.25 - 0.69/365.25)/50,replicas = 50)
+start_time <- Sys.time()
+plyr::rdply(.n = 2,f_loop())
+end_time <- Sys.time()
+end_time - start_time
+```
+
     
 ###  Desenho Experimental
 
-Dois eixos de variação:  
+Dois eixos de variação:
 
 1) tamanho populacional inicial da espécie invasora: 10% K até K
-  
-  
-2) assimetria competitiva: da equivalência até a dominância extrema da invasora  
+
+2) assimetria competitiva: da equivalência até a dominância extrema da invasora
 
     
-```{r desenho expercimental, eval=FALSE}
+```{r desenho expercimental invasão, eval=FALSE,echo=TRUE}
 library(plyr)
 library(doMC)
 library(tidyverse)
-df_sim <- data.frame(N0=50, M0 = c(5,50),
-                     k_n = 50,k_m = 50,
-                     beta_n = 0.7/365.25,beta_m = 0.7/365.25,
-                     delta_n = 0.69/365.25,delta_m = 0.69/365.25) |> 
-  mutate(gamma_n = (beta_n - delta_n) / k_n,
-         gamma_m = (beta_m - delta_m) / k_m,
-         C_n = gamma_n,C_m = gamma_m)
-registerDoMC(2)
+df_sim <- data.frame(k = 50, beta = 0.7/365.25, delta = 0.69/365.25) |> 
+  mutate(gamma = (beta - delta) / k)
+df_sim <- cbind(df_sim,
+                expand.grid(M0 = floor(df_sim$k * c(0.05,seq(0.2,1,by=0.2))), # 
+                            C_n = df_sim$gamma * seq(1,2,length.out=3)))
+registerDoMC(3)
 df_replicas <- plyr::adply(df_sim,1,
-                           function(X) do.call("f_2sppSLV",list(pars=X,replicas=100)),
+                           function(X) do.call("f_2sppSLV",
+                                               list(N0=X$k,beta_n=X$beta,delta_n=X$delta,gamma_n=X$gamma,C_n=X$C_n,
+                                                    M0=X$M0,beta_m=X$beta,delta_m=X$delta,gamma_m=X$gamma,C_m=X$gamma,
+                                                    replicas=50)),
                            .parallel = TRUE)
 write_csv(df_replicas,file="df_replicas.csv")
 ```
 
-```{r}
+```{r eval=FALSE, echo=FALSE, include=FALSE}
 df_replicas |>
   group_by(M0,.n) |>
   slice_tail(n=1) |> 
