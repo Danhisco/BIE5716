@@ -4,7 +4,7 @@ author: "Danilo Pereira Mori"
 date: "2022-08-20"
 output: html_document
 editor_options: 
-  chunk_output_type: console
+  chunk_output_type: inline
 ---
 
 ```{r setup, include=FALSE}
@@ -22,32 +22,41 @@ upload_file(file ="relatorio_final.Rmd",
 ```
 
 # Introdução
-<!-- O modelo de crescimento exponencial incorpora o princípio fundamental de que a vida provém de outra e assim examina o comportamento de uma população que pode crescer sem limitação alguma. Ao incluir a influência que o aumento na densidade populacional pode ter na limitação do crescimento, o modelo logístico incorpora outro princípio fundamental que é o da perda de excedente de indivíduos esperado por um crescimento ilimitado. Caso uma população crescesse de forma exponencial todo o universo conhecido poderia estar colonizado por um único tipo de vida. Outro componente essencial da modulação dos eventos demográficos é a interação com outras espécies. Aqui vamos explorar um modelo de competição de 2 populações em crescimento denso dependente, A e B. -->
+O modelo de crescimento exponencial incorpora o princípio fundamental de que a vida provém de outra e assim examina o comportamento de uma população que pode crescer sem limitação alguma. Ao incluir a influência que o aumento na densidade populacional pode ter na limitação do crescimento, o modelo logístico incorpora outro princípio fundamental que é o da perda de excedente de indivíduos esperado por um crescimento ilimitado. Caso uma população crescesse de forma exponencial todo o universo conhecido poderia estar colonizado por um único tipo de vida. Outro componente essencial da modulação dos eventos demográficos é a interação com outras espécies. Aqui vamos explorar um modelo de competição de 2 populações em crescimento denso dependente, N e M.
 
-<!-- Vamos modelar o sistema usando um arcabouço de reações e difusão (Gillespie 1977) onde as reações individuais, microscópicas, são explicitadas com a intenção de descrever o comportamento macroscópico do sistema em termos do tamanho populacional das espécies. -->
-<!-- [INCLUIR UMA PARTE SOBRE DA ONDE VEM A CONCEITUALIZAÇÃO] -->
-<!-- As reações individuais consideradas estão descritas na figura 1.  -->
+Vamos modelar o sistema usando um arcabouço de processos de difusão (Gillespie 1977) onde as reações individuais, microscópicas, são explicitadas com a intenção de descrever o comportamento macroscópico do sistema em termos do tamanho populacional das espécies.
+Aqui perguntamos como a estocasticidade demográfica pode modificar o esperado pela aproximação de campo médio nos cenários de invasão. Avaliamos o aumento do tamanho populacional da invasora e a variação na assimetria competitiva entre as duas espécies. Descrevo as reações demográficas consideradas, a equação mestra da dinâmica ecológica e as aproximações de campo médio da equação mestra. Então comparo com o observado numericamente usando uma implementação do algortimo de Gillespie (1977).
 
-
-
-
-## Reactions
-
-## Master Equation
-
-> 2 spp: n e m  
-> C = parâmetro de competição 
+## Reações  
   
-linha 1: probabilidade de n perder um indivíduo  
+Vamos modelar a mudança de estado do sistema, descrito por (n,m), onde n e m são a abundância de N e M, respectivamente. O modelo considera possíveis mudanças discretas de 1 indivíduo no sistema em um intervalo de tempo muito pequeno dt. As oito reações consideradas estão disponíveis na tabela 1, elas constituem um modelo de denso depedência em que a competição interespecífica é modelada de forma similar à da competição intraespecífica: pela probabilidade de exclusão de um dos dois indivíduos por evento de colisão. O modelo pressupõe que não é possível distinguir entre indivíduos de uma mesma espécie, assim, o parâmetro $\gamma$ descreve a probabilidade de qualquer um dos dois indivíduos ser excluído, por isso ele está dividido por 2.
+
+
+```{r tabela 1}
+library(knitr)
+library(kableExtra)
+df_tabela1 <- data.frame(reactions = c("n -> n + n","n -> 0","n + n -> n","n + m -> m",
+                                       "m -> m + m","m -> 0","m + m -> m","m + n -> n"),
+                         description = c("reprod. assex. de N","morte de N","comp. intraesp. de N","exclusão de N por M",
+                                         "reprod. assex. de M","morte de M","comp. intraesp. de M","exclusão de M por N"),
+                         Prob_dt = c("$\\beta n$","$\\delta n$","$\\gamma n (n-1) 2^{-1}$","$\\text{C}_{n} n m$",
+                                     "$\\beta m$","$\\delta m$","$\\gamma m (m-1) 2^{-1}$","$\\text{C}_{m} m n$"),
+                         unit_ParDemog = c("$P(nasc. de N)/ind. de N  dt$", "$P(morte de N)/ind. de N dt$",
+                                           "$P(exclusão de N)/colisão N dt$","$P(exclusão de N)/colisão N M dt$",
+                                           "$P(nasc. de M)/ind. de M dt$", "$P(morte de M)/ind. de M dt$",
+                                           "$P(exclusão de M)/colisão M dt$","$P(exclusão de M)/colisão M N dt$"))
+df_tabela1 %>%
+  kbl(caption = "Tabela 1. Possíveis reações no modelo de competição de duas espécies sob denso dependência",
+      col.names = c("reações","descrição","P(reação)/dt","unidade do parâmetro")) %>%
+  kable_classic(full_width = T, html_font = "Cambria")
+
+```
   
-linha 2: probabilidade de n ganhar um indivíduo  
-  
-linha 3: probabilidade de m perder um indivíduo  
-  
-linha 4: probabilidade de m ganhar um indivíduo  
-  
-linha 5: probabilidade de nada acontecer  
-  
+## The master equation and the mean-field approximation   
+   
+     
+A partir das reações é possível desenvolver uma equação mestra que descreve a taxa de mudança da probabilidade de um determinado estado [$\frac{\partial P(n,m,t)}{\partial t}$] pela diferença na taxa da probabilidade de entrada e saída deste estado (equação 1). Na primeira linha depois da igualdade, há a soma das taxa com que N pode perder um indivíduo, indo do estado (n+1,m) para o estado (n,m). Na segunda linha a taxa com que N pode ganhar um indivíduo, indo do estado (n-1,m) para o estado (n,m). Nas linhas 3 e 4 a mesma lógica para M. Na quinta linha há a taxa com que o sistema pode permanecer no estado (n,m). Para detalhes veja tabela 1.
+
 
 $$
 \frac{\partial P(n,m,t)}{\partial t} = \\
@@ -56,13 +65,31 @@ P(n,m+1) (m+1) (\delta_m + m \gamma_m / 2 + n C_{m}) +\\ P(n,m-1) (m-1) \beta_m+
 - P(n,m)[n(\beta_n + \delta_n + (n-1) \gamma_n / 2 + m C_{n}) + m(\beta_m + \delta_m + (m-1) \gamma_m / 2 + n C_{m})]
 $$
 
+
+Com a equação mestra é possível descrever a taxa de mudança da probabilidade de todos os possíveis estados do sistema (n,m). Uma aproximação possível para estudar possíveis cenários é a de campo médio (mean field). Nessa aproximação buscamos obter o primeiro momento da distribuição de probabilidade marginal de N, E[N] = <n>, e de M, E[M] = <m>. Para isso é necessário estabelecer algumas definições: $<n> = \sum_{n=0}^{\infty} n P(n,m,t)$; $<n^2> = \sum_{n=0}^{\infty} n^2 P(n,m,t)$; $<m> = \sum_{m=0}^{\infty} m P(n,m,t)$; $<m^2> = \sum_{m=0}^{\infty} m^2 P(n,m,t)$; $<nm> = \sum_{n=0}^{\infty}\sum_{m=0}^{\infty} nm P(n,m,t)$. Para obter o primeiro momento basta multiplicar a equação mestra por n ou m e realizar o somatório (apêndice 1), e então é possível obter:
+
+$$
+\frac{d <n>}{d t} = <n> (\beta_n - \delta_n + \gamma_n2^{-1})- <n^2>\gamma_n2^{-1} - <nm>C_n
+$$
+$$
+\frac{d <m>}{d t} = <m> (\beta_m - \delta_m + \gamma_m2^{-1})- <m^2>\gamma_m2^{-1} - <mn>C_m
+$$
+
+A aproximação de campo médio pressupõe que $<n>^2 = <n^2>$, $<m>^2 = <m^2>$, $<nm> = <n><m>$. Esse pressuposto implica que a variância da dinâmica populacional denso dependente é zero e que as populações são independentes. Outro pressuposto possível para simplificar a aproximação é de que $\beta$ ou $\delta$ >> $\gamma$, assim $\gamma$ pode ser omitido como fator do primeiro momento. Essa aproximação é útil pois permite a convergência das equações acima com o modelo determinístico de competição interespecífica de duas populações com crescimento denso dependente. A investigação desse modelo determinístico mostra o quê poderiamos esperar caso não houvesse nenhuma flutuação devido à estocasticidade dos eventos demográficos.
+  
+    
+## Cenários de Assimetria Competitiva  
+  
+Para facilitar as análises vamos variar apenas o parâmetro que ajusta a probabilidade de uma exclusão de uma espécie pela outra por colisão (parâmetros $C_n$ e $C_m$, tabela 1). Os demais parâmetros populacionais serão iguais: $\beta =$ `r format(0.7/365.25,scientific = TRUE,digits = 4)`, $\delta =$ `r format(0.69/365.25,scientific = TRUE,digits = 4)`, $\gamma =$ `r format((0.7/365.25-0.69/365.25)/50,scientific = TRUE,digits = 4)`.
+
+
 ## The computacional model
   
   
 ```{r the computacional model,echo=TRUE,eval=TRUE}
 f_2sppSLV <- function(N0,beta_n,delta_n,gamma_n,C_n,
                       M0,beta_m,delta_m,gamma_m,C_m,
-                      replicas){
+                      replicas,track){
  df_ab <- data.frame(n=N0,m=M0,t=0)
  df_t <- data.frame(n=c(1,-1,0,0), # 4 possibles transitions:
                     m=c(0,0,1,-1)) # n + 1, n - 1, m + 1, m - 1
@@ -82,6 +109,7 @@ f_2sppSLV <- function(N0,beta_n,delta_n,gamma_n,C_n,
    df_ab[nrow(df_ab)+1,] <- c(df_ab[nrow(df_ab),1:2] + df_t[sample(1:4,size = 1,prob=v_rates/v_Srates),],
                               df_ab[nrow(df_ab),"t"] - log(runif(1))/v_Srates)
    }
+   if(track!=TRUE){return(df_ab[nrow(df_ab),])}
    return(df_ab)
 }
 plyr::rdply(.n = replicas,f_loop())
@@ -92,6 +120,7 @@ plyr::rdply(.n = replicas,f_loop())
 ### um exemplo neutro: uma réplica de n0 = m0 = 25; K = 50
 
 ![exemplo de corrida neutra](/home/danilo/Documentos/mestrado_Ecologia/disciplinas/BIE5716/competicao_neutra.png)
+
 ```{r time estimative, include=FALSE,echo=FALSE,eval=FALSE}
 f_2sppSLV(N0=50, beta_n = 0.7/365.25, delta_n = 0.69/365.25, gamma_n = (0.7/365.25 - 0.69/365.25)/50, C_n =  (0.7/365.25 - 0.69/365.25)/50,
           M0=50, beta_m = 0.7/365.25, delta_m = 0.69/365.25, gamma_m = (0.7/365.25 - 0.69/365.25)/50, C_m =  (0.7/365.25 - 0.69/365.25)/50,replicas = 50)
@@ -121,30 +150,43 @@ df_sim <- cbind(df_sim,
                 expand.grid(M0 = floor(df_sim$k * c(0.05,seq(0.2,1,by=0.2))), # 
                             C_n = df_sim$gamma * seq(1,2,length.out=3)))
 registerDoMC(3)
-df_replicas <- plyr::adply(df_sim,1,
-                           function(X) do.call("f_2sppSLV",
-                                               list(N0=X$k,beta_n=X$beta,delta_n=X$delta,gamma_n=X$gamma,C_n=X$C_n,
-                                                    M0=X$M0,beta_m=X$beta,delta_m=X$delta,gamma_m=X$gamma,C_m=X$gamma,
-                                                    replicas=50)),
+df_replicas <- 
+  plyr::adply(df_sim,1,
+              function(X) do.call("f_2sppSLV",
+                                  list(N0=X$k,beta_n=X$beta,delta_n=X$delta,gamma_n=X$gamma,C_n=X$C_n,
+                                       M0=X$M0,beta_m=X$beta,delta_m=X$delta,gamma_m=X$gamma,C_m=X$gamma,
+                                       replicas=50,track=FALSE)),
                            .parallel = TRUE)
+
 write_csv(df_replicas,file="df_replicas.csv")
 ```
 
-```{r eval=FALSE, echo=FALSE, include=FALSE}
-df_replicas |>
-  group_by(M0,.n) |>
+### anaĺise dos dados
+
+#### réplicas com o tempo
+
+```{r graficos exploratorios, eval=FALSE, echo=FALSE, include=FALSE}
+df_replicas <- read.csv("./csv/df_replicas_allTime.csv")
+df_resultados <- df_replicas |>
+  group_by(M0,C_n,.n) |>
   slice_tail(n=1) |> 
-  mutate()
-  
-
-df_ab |> 
-  pivot_longer(!t,names_to="populations",values_to = "abundance") |> 
-  ggplot(aes(y=abundance,x=t)) +
-  geom_hline(yintercept = 50,color="black",alpha=0.4,linetype='dashed')+
-  geom_line(aes(colour=populations)) +
-  scale_colour_brewer(palette = "Set1") +
-  labs(title = "Neutral competition") +
-  theme_bw()
-
+  mutate(invasion=ifelse(m!=0,1,0)) |> 
+  group_by(M0,C_n) |>
+  summarise(c_invasion = sum(invasion),
+            t_mean = mean(t),
+            t_var = var(t)) |> 
+  mutate(Prob_invasion = c_invasion/50,
+         M0=M0/50)
+rm(df_replicas)
+#
+ggplot(df_resultados,aes(x=M0,y=C_n,fill=Prob_invasion)) +
+  geom_tile() +
+  scale_fill_distiller(palette = "Spectral") +
+  labs(fill="",x="M0, initial pop. size of invader (prop. of K)",y="Cn, competion influence of the invader into the resident") +
+  coord_cartesian(expand = FALSE) +
+  # scale_y_continuous(breaks = seq(0,20,by=4)) +
+  # scale_x_continuous(breaks = seq(0.05,0.95,by=0.10)) +
+  ggtitle("Prob(replace the resident specie)") +
+  theme_classic()
 ```
 
