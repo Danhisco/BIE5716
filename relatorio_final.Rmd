@@ -4,11 +4,11 @@ author: "Danilo Pereira Mori"
 date: "2022-08-20"
 output: html_document
 editor_options: 
-  chunk_output_type: console
+  chunk_output_type: inline
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE,message = FALSE,warning = FALSE,cache = TRUE)
 ```
 
 ```{r google docs management, eval=FALSE,include=FALSE}
@@ -46,7 +46,7 @@ df_tabela1 <- data.frame(reactions = c("n -> n + n","n -> 0","n + n -> n","n + m
                                            "$P(nasc. de M)/ind. de M dt$", "$P(morte de M)/ind. de M dt$",
                                            "$P(exclusão de M)/colisão M dt$","$P(exclusão de M)/colisão M N dt$"))
 df_tabela1 %>%
-  kbl(caption = "Tabela 1. Possíveis reações no modelo de competição de duas espécies sob denso dependência",
+  kbl(caption = "Tabela 1. Possíveis reações no modelo estocástico de competição de duas espécies sob denso dependência",
       col.names = c("reações","descrição","P(reação)/dt","unidade do parâmetro")) %>%
   kable_classic(full_width = T, html_font = "Cambria")
 
@@ -91,7 +91,7 @@ Para facilitar as análises vamos variar apenas o parâmetro que ajusta a probab
 
 ## The computacional model
 
-É possível simular computacionalmente possíveis trajetórias do sistema implementando o algoritmo de Gillespie (1977). A ideia do algoritmo se baseia no fato de que a distribuição de tempos entre mudanças de estados pode ser descrita por uma distribuição exponencial, então computamos separadamente as mudanças de estado e o tempo entre mudanças. O tempo entre mudança de estados pode ser obtido pela divisão do log de uma amostra de uma distribuição uniforme padrão pela soma das taxas de saída do estado. Existem 4 possíveis transições de estado: cada uma das duas espécies pode ganhar ou perder um indivíduo por evento demográfico no intervalo de tempo dt. A taxa de ganho de um indivíduo de N ($n\_p$) é  $n\_p=\beta n$. A taxa de perda de um indivíduo de N ($n\_m$) é $n\_m = n[\delta +(n-1)\gamma2^{-1} + mC_n]$. Mesma lógica para as taxas de ganho e perda da espécie M (eq. 1 e janela de código 1). Após o sorteio do próximo tempo do evento de mudança de estado, é feito um sorteio da mudança de estado com probabilidade de cada estado dado pela contribuição relativa de cada taxa descrita anteriormente (janela de código 1), então o sistema é atualizado. A simulação termina quando alguma população atinge o zero.   
+É possível simular computacionalmente as possíveis trajetórias do sistema implementando o algoritmo de Gillespie (1977). A ideia do algoritmo se baseia no fato de que a distribuição de tempos entre mudanças de estados pode ser descrita por uma distribuição exponencial, então computamos separadamente as mudanças de estado e o tempo entre mudanças. O tempo entre mudança de estados pode ser obtido pela divisão do log de um valor de uma distribuição uniforme padrão pela soma das taxas de saída do estado (janela de código 1). Existem 4 possíveis transições de estado: cada uma das duas espécies pode ganhar ou perder um indivíduo por evento demográfico no intervalo de tempo dt. A taxa de ganho de um indivíduo de N ($n\_p$) é  $n\_p=\beta n$. A taxa de perda de um indivíduo de N ($n\_m$) é $n\_m = n[\delta +(n-1)\gamma2^{-1} + mC_n]$. A mesma lógica se aplica para as taxas de ganho e perda da espécie M (eq. 1 e janela de código 1). Após o sorteio do próximo tempo do evento de mudança de estado, é feito um sorteio da mudança de estado com probabilidade de cada estado dado pela contribuição relativa de cada taxa descrita anteriormente (janela de código 1), então o sistema é atualizado. Nossa simulação termina quando alguma população atinge o zero. Os cenários de competição explorados estão na figura 1.   
 
 
 __janela de código 1__
@@ -126,21 +126,13 @@ readr::write_csv(df_dinamica,file = path_csv)
 }
 ```
 
-###  Desenho Experimental
-
-Dois eixos de variação:
-
-1) tamanho populacional inicial da espécie invasora: 10% K até K
-
-2) assimetria competitiva: da equivalência até a dominância extrema da invasora
-
     
-```{r desenho expercimental invasão, eval=FALSE,echo=TRUE}
+```{r desenho expercimental invasão, eval=FALSE,echo=FALSE}
 library(plyr)
 library(doMC)
 library(tidyverse)
 df_sim <- data.frame(k = 50, beta = 0.7/365.25, delta = 0.69/365.25) |> 
-  mutate(gamma = (beta - delta) / k)
+  mutate(gamma = 2* (beta - delta) / k)
 df_sim <- cbind(df_sim,
                 expand.grid(M0 = floor(df_sim$k * c(0.05,seq(0.2,1,by=0.2))), # 
                             C_n = df_sim$gamma * seq(1,2,length.out=6))) |> 
@@ -148,12 +140,12 @@ df_sim <- cbind(df_sim,
 df_sim <- rbind(filter(df_sim,C_n!=df_sim$gamma[1]),
                 mutate(df_sim,
                        C_m=C_n,C_n=gamma)) |> 
-  mutate(C_n.m = C_n - C_m,
-         id = 1:n(),
+  mutate(id = 1:n(),
          path = paste0("csv/id_",id,".csv"))
 
 df_sim |> 
   mutate(M0_plot = M0/50,
+         C_n.m = C_n - C_m,
          C_n.m_plot = C_n.m/gamma) |> 
   ggplot(aes(x=M0_plot,y=C_n.m_plot)) + 
   geom_hline(yintercept = 0,color="red",alpha=0.4) +
@@ -163,50 +155,83 @@ df_sim |>
        subtitle = "n = resident specie, m = invader specie") +
   theme_bw()
 ```
+  
+__Figura 1__ Cenários simulados de competição interespecífica.  Eixo x: diferença no parâmetro C da espécie residente pela invasora, dividido pelo parâmetro $\gamma$.
 
-```{r}
+
+```{r simulação do modelo nos cenários explorados, eval=FALSE,echo=FALSE,include=TRUE}
 registerDoMC(3)
-df_replicas <- 
-  plyr::adply(df_sim,1,
-              function(X) do.call("f_2sppSLV",
-                                  list(N0=X$k,beta_n=X$beta,delta_n=X$delta,gamma_n=X$gamma,C_n=X$C_n,
-                                       M0=X$M0,beta_m=X$beta,delta_m=X$delta,gamma_m=X$gamma,C_m=X$C_m,
-                                       replicas=50,path_csv=X$path)),
-                           .parallel = TRUE)
-
-write_csv(df_replicas,file="df_replicas.csv")
+plyr::a_ply(df_sim,1,
+            function(X) do.call("f_2sppSLV",
+                                list(N0=X$k,beta_n=X$beta,delta_n=X$delta,gamma_n=X$gamma,C_n=X$C_n,
+                                     M0=X$M0,beta_m=X$beta,delta_m=X$delta,gamma_m=X$gamma,C_m=X$C_m,
+                                     replicas=50,path_csv=X$path)),
+            .parallel = TRUE)
 ```
 
 
 ### anaĺise dos dados
 
-#### réplicas com o tempo
-
-```{r graficos exploratorios, eval=FALSE, echo=FALSE, include=FALSE}
-df_replicas <- read.csv("./csv/df_replicas_allTime.csv")
-df_resultados <- df_replicas |>
-  group_by(M0,C_n,.n) |>
-  slice_tail(n=1) |> 
-  mutate(invasion=ifelse(m!=0,1,0)) |> 
-  group_by(M0,C_n) |>
+```{r análises preparatórias, eval=FALSE, echo=FALSE, include=FALSE}
+f_resultados <- function(X){
+  read_csv(X$path) |>
+    group_by(.n) |>
+    slice_tail(n=1) |> 
+    mutate(invasion=ifelse(m!=0,1,0))
+}
+registerDoMC(2)
+df_rep.tFinal <- adply(df_sim,1,f_resultados,.parallel = TRUE)
+df_resultados <- df_rep.tFinal |> 
+  group_by(id) |>
   summarise(c_invasion = sum(invasion),
             t_mean = mean(t),
-            t_var = var(t)) |> 
-  mutate(Prob_invasion = c_invasion/50,
-         M0=M0/50)
-rm(df_replicas)
+            t_var = var(t),
+            n_mean = mean(n),
+            n_var = var(n),
+            m_mean = mean(m),
+            m_var = var(m)) |> 
+  inner_join(distinct(select(df_rep.tFinal,id:C_m)),by="id") |> 
+  mutate(C_nm = (C_n - C_m)/df_sim$gamma[1]) |> 
+  arrange(C_nm)
 #
-ggplot(df_resultados,aes(x=M0,y=C_n,fill=Prob_invasion)) +
+write_csv(df_rep.tFinal,file = "resultados/df_rep_tFinal.csv")
+write_csv(df_resultados,file="resultados/df_resultados.csv")
+```
+
+```{r modelo estatístico para descrever a probabilidade de invasao,echo=FALSE,include=FALSE,eval=FALSE}
+# pacote adicional
+library(mgcv)
+# dados para o modelo estatístico
+df_resultados <- read_csv("resultados/df_resultados.csv")
+f_z <- function(x){
+  m <- base::mean(x,na.rm=FALSE)
+  sd <- sd(x,na.rm=FALSE)
+  output <- (x-m)/sd
+  return(output)
+} 
+df_resultados$M0.z <- f_z(df_resultados$M0)
+df_resultados$C_nm.z <- f_z(df_resultados$C_nm)
+# glm binomial
+md_P.replacement <- gam(cbind(c_invasion,50-c_invasion) ~ s(M0.z,bs = "cr") + s(C_nm.z,bs = "cr") + ti(M0.z,C_nm.z,bs=c("cr","cr")),
+                        family = binomial(link = logit),data = df_resultados)
+summary(md_P.replacement)
+```
+```{r graf exp prob replace the resident, echo=FALSE,include=TRUE,eval=TRUE}
+library(tidyverse)
+df_resultados <- readr::read_csv("resultados/df_resultados.csv")
+df_resultados |> 
+  mutate(Prob_invasion = c_invasion/50,
+         propM0 = M0/50) |> 
+  ggplot(aes(x=propM0,y=C_nm,fill=Prob_invasion)) +
   geom_tile() +
   scale_fill_distiller(palette = "Spectral") +
-  labs(fill="",x="M0, initial pop. size of invader (prop. of K)",y="Cn, competion influence of the invader into the resident") +
+  labs(fill="",x="M0, initial pop. size of invader (%K)",y="Cn - Cm (%)") +
   coord_cartesian(expand = FALSE) +
   # scale_y_continuous(breaks = seq(0,20,by=4)) +
   # scale_x_continuous(breaks = seq(0.05,0.95,by=0.10)) +
   ggtitle("Prob(replace the resident specie)") +
   theme_classic()
 ```
-
 
 # Apêndice
 
@@ -218,3 +243,6 @@ plyr::rdply(.n = 2,f_loop())
 end_time <- Sys.time()
 end_time - start_time
 ```
+
+
+
