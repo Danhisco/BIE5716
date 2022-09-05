@@ -4,7 +4,7 @@ author: "Danilo Pereira Mori"
 date: "2022-08-20"
 output: html_document
 editor_options: 
-  chunk_output_type: inline
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -66,7 +66,7 @@ P(n,m+1) (m+1) (\delta_m + m \gamma_m / 2 + n C_{m}) +\\ P(n,m-1) (m-1) \beta_m+
 $$
 
 
-Com a equação mestra é possível descrever a taxa de mudança da probabilidade de todos os possíveis estados do sistema (n,m). Uma aproximação possível para estudar possíveis cenários é a de campo médio (mean field). Nessa aproximação buscamos obter o primeiro momento da distribuição de probabilidade marginal de N, E[N] = <n>, e de M, E[M] = <m>. Para isso é necessário estabelecer algumas definições: $<n> = \sum_{n=0}^{\infty} n P(n,m,t)$; $<n^2> = \sum_{n=0}^{\infty} n^2 P(n,m,t)$; $<m> = \sum_{m=0}^{\infty} m P(n,m,t)$; $<m^2> = \sum_{m=0}^{\infty} m^2 P(n,m,t)$; $<nm> = \sum_{n=0}^{\infty}\sum_{m=0}^{\infty} nm P(n,m,t)$. Para obter o primeiro momento basta multiplicar a equação mestra por n ou m e realizar o somatório (apêndice 1), e então é possível obter:
+Com a equação mestra é possível descrever a taxa de mudança da probabilidade de todos os possíveis estados do sistema (n,m). Uma aproximação possível para estudar possíveis cenários é a de campo médio (mean field). Nessa aproximação buscamos obter o primeiro momento da distribuição de probabilidade marginal de N, E[N] = <n>, e de M, E[M] = <m>. Para isso é necessário estabelecer algumas definições: $<n> = \sum_{n=0}^{\infty} n P(n,m,t)$; $<n^2> = \sum_{n=0}^{\infty} n^2 P(n,m,t)$; $<m> = \sum_{m=0}^{\infty} m P(n,m,t)$; $<m^2> = \sum_{m=0}^{\infty} m^2 P(n,m,t)$; $<nm> = \sum_{n=0}^{\infty}\sum_{m=0}^{\infty} nm P(n,m,t)$. Para obter o primeiro momento basta multiplicar a equação mestra por n ou m e realizar o somatório (apêndice 1), e então é possível obter as equações 2a e 2b:
 
 $$
 \frac{d <n>}{d t} = <n> (\beta_n - \delta_n + \gamma_n2^{-1})- <n^2>\gamma_n2^{-1} - <nm>C_n
@@ -75,21 +75,31 @@ $$
 \frac{d <m>}{d t} = <m> (\beta_m - \delta_m + \gamma_m2^{-1})- <m^2>\gamma_m2^{-1} - <mn>C_m
 $$
 
-A aproximação de campo médio pressupõe que $<n>^2 = <n^2>$, $<m>^2 = <m^2>$, $<nm> = <n><m>$. Esse pressuposto implica que a variância da dinâmica populacional denso dependente é zero e que as populações são independentes. Outro pressuposto possível para simplificar a aproximação é de que $\beta$ ou $\delta$ >> $\gamma$, assim $\gamma$ pode ser omitido como fator do primeiro momento. Essa aproximação é útil pois permite a convergência das equações acima com o modelo determinístico de competição interespecífica de duas populações com crescimento denso dependente. A investigação desse modelo determinístico mostra o quê poderiamos esperar caso não houvesse nenhuma flutuação devido à estocasticidade dos eventos demográficos.
-  
+A aproximação de campo médio pressupõe que $<n>^2 = <n^2>$, $<m>^2 = <m^2>$, $<nm> = <n><m>$. Esse pressuposto implica que a variância da dinâmica populacional denso dependente é zero e que as populações são independentes. Outro pressuposto possível para simplificar a aproximação é de que $\beta$ ou $\delta$ >> $\gamma$, assim $\gamma$ pode ser omitido como fator do primeiro momento. Essa aproximação é útil pois permite a convergência das equações acima com o modelo determinístico de competição interespecífica de duas populações com crescimento denso dependente (eq. 3a e 3b). A investigação desse modelo determinístico mostra o quê poderiamos esperar no equilíbrio caso não houvesse nenhuma flutuação devido à estocasticidade dos eventos demográficos.
+
+$$
+\frac{d <n>}{d t} = <n> (\beta_n - \delta_n + \gamma_n2^{-1})- <n>^2\gamma_n2^{-1} - <n><m>C_n
+$$
+$$
+\frac{d <m>}{d t} = <m> (\beta_m - \delta_m + \gamma_m2^{-1})- <m>^2\gamma_m2^{-1} - <m><n>C_m
+$$
     
 ## Cenários de Assimetria Competitiva  
   
-Para facilitar as análises vamos variar apenas o parâmetro que ajusta a probabilidade de uma exclusão de uma espécie pela outra por colisão (parâmetros $C_n$ e $C_m$, tabela 1). Os demais parâmetros populacionais serão iguais: $\beta =$ `r format(0.7/365.25,scientific = TRUE,digits = 4)`, $\delta =$ `r format(0.69/365.25,scientific = TRUE,digits = 4)`, $\gamma =$ `r format((0.7/365.25-0.69/365.25)/50,scientific = TRUE,digits = 4)`.
+Para facilitar as análises vamos variar apenas o parâmetro que ajusta a probabilidade de exclusão de uma espécie pela outra por colisão (parâmetros $C_n$ e $C_m$, tabela 1). Os demais parâmetros populacionais serão iguais: $\beta =$ `r format(0.7/365.25,scientific = TRUE,digits = 4)`, $\delta =$ `r format(0.69/365.25,scientific = TRUE,digits = 4)`, $\gamma =$ `r format(2*(0.7/365.25-0.69/365.25)/50,scientific = TRUE,digits = 4)`. Os parâmetros de competição interespecífica ($C_n$ e $C_m$) vão variar entre $C_n = C_m = \gamma$ e $C_n = C_m = 2\gamma$, explorando dois extremos onde a espécie residente pode ser a espécie competitiva superior ou inferior. 
 
 
 ## The computacional model
-  
-  
+
+É possível simular computacionalmente possíveis trajetórias do sistema implementando o algoritmo de Gillespie (1977). A ideia do algoritmo se baseia no fato de que a distribuição de tempos entre mudanças de estados pode ser descrita por uma distribuição exponencial, então computamos separadamente as mudanças de estado e o tempo entre mudanças. O tempo entre mudança de estados pode ser obtido pela divisão do log de uma amostra de uma distribuição uniforme padrão pela soma das taxas de saída do estado. Existem 4 possíveis transições de estado: cada uma das duas espécies pode ganhar ou perder um indivíduo por evento demográfico no intervalo de tempo dt. A taxa de ganho de um indivíduo de N ($n\_p$) é  $n\_p=\beta n$. A taxa de perda de um indivíduo de N ($n\_m$) é $n\_m = n[\delta +(n-1)\gamma2^{-1} + mC_n]$. Mesma lógica para as taxas de ganho e perda da espécie M (eq. 1 e janela de código 1). Após o sorteio do próximo tempo do evento de mudança de estado, é feito um sorteio da mudança de estado com probabilidade de cada estado dado pela contribuição relativa de cada taxa descrita anteriormente (janela de código 1), então o sistema é atualizado. A simulação termina quando alguma população atinge o zero.   
+
+
+__janela de código 1__
+
 ```{r the computacional model,echo=TRUE,eval=TRUE}
 f_2sppSLV <- function(N0,beta_n,delta_n,gamma_n,C_n,
                       M0,beta_m,delta_m,gamma_m,C_m,
-                      replicas,track){
+                      replicas,path_csv){
  df_ab <- data.frame(n=N0,m=M0,t=0)
  df_t <- data.frame(n=c(1,-1,0,0), # 4 possibles transitions:
                     m=c(0,0,1,-1)) # n + 1, n - 1, m + 1, m - 1
@@ -109,28 +119,13 @@ f_2sppSLV <- function(N0,beta_n,delta_n,gamma_n,C_n,
    df_ab[nrow(df_ab)+1,] <- c(df_ab[nrow(df_ab),1:2] + df_t[sample(1:4,size = 1,prob=v_rates/v_Srates),],
                               df_ab[nrow(df_ab),"t"] - log(runif(1))/v_Srates)
    }
-   if(track!=TRUE){return(df_ab[nrow(df_ab),])}
    return(df_ab)
 }
-plyr::rdply(.n = replicas,f_loop())
+df_dinamica <- plyr::rdply(.n = replicas,f_loop())
+readr::write_csv(df_dinamica,file = path_csv)
 }
 ```
 
-
-### um exemplo neutro: uma réplica de n0 = m0 = 25; K = 50
-
-![exemplo de corrida neutra](/home/danilo/Documentos/mestrado_Ecologia/disciplinas/BIE5716/competicao_neutra.png)
-
-```{r time estimative, include=FALSE,echo=FALSE,eval=FALSE}
-f_2sppSLV(N0=50, beta_n = 0.7/365.25, delta_n = 0.69/365.25, gamma_n = (0.7/365.25 - 0.69/365.25)/50, C_n =  (0.7/365.25 - 0.69/365.25)/50,
-          M0=50, beta_m = 0.7/365.25, delta_m = 0.69/365.25, gamma_m = (0.7/365.25 - 0.69/365.25)/50, C_m =  (0.7/365.25 - 0.69/365.25)/50,replicas = 50)
-start_time <- Sys.time()
-plyr::rdply(.n = 2,f_loop())
-end_time <- Sys.time()
-end_time - start_time
-```
-
-    
 ###  Desenho Experimental
 
 Dois eixos de variação:
@@ -148,18 +143,40 @@ df_sim <- data.frame(k = 50, beta = 0.7/365.25, delta = 0.69/365.25) |>
   mutate(gamma = (beta - delta) / k)
 df_sim <- cbind(df_sim,
                 expand.grid(M0 = floor(df_sim$k * c(0.05,seq(0.2,1,by=0.2))), # 
-                            C_n = df_sim$gamma * seq(1,2,length.out=3)))
+                            C_n = df_sim$gamma * seq(1,2,length.out=6))) |> 
+  mutate(C_m = gamma)
+df_sim <- rbind(filter(df_sim,C_n!=df_sim$gamma[1]),
+                mutate(df_sim,
+                       C_m=C_n,C_n=gamma)) |> 
+  mutate(C_n.m = C_n - C_m,
+         id = 1:n(),
+         path = paste0("csv/id_",id,".csv"))
+
+df_sim |> 
+  mutate(M0_plot = M0/50,
+         C_n.m_plot = C_n.m/gamma) |> 
+  ggplot(aes(x=M0_plot,y=C_n.m_plot)) + 
+  geom_hline(yintercept = 0,color="red",alpha=0.4) +
+  geom_point() +
+  labs(title = "Cenários Simulados",
+       x="initial abundance m (%K = 50)",y=expression(C[n] - C[m]*"(%)"),
+       subtitle = "n = resident specie, m = invader specie") +
+  theme_bw()
+```
+
+```{r}
 registerDoMC(3)
 df_replicas <- 
   plyr::adply(df_sim,1,
               function(X) do.call("f_2sppSLV",
                                   list(N0=X$k,beta_n=X$beta,delta_n=X$delta,gamma_n=X$gamma,C_n=X$C_n,
-                                       M0=X$M0,beta_m=X$beta,delta_m=X$delta,gamma_m=X$gamma,C_m=X$gamma,
-                                       replicas=50,track=FALSE)),
+                                       M0=X$M0,beta_m=X$beta,delta_m=X$delta,gamma_m=X$gamma,C_m=X$C_m,
+                                       replicas=50,path_csv=X$path)),
                            .parallel = TRUE)
 
 write_csv(df_replicas,file="df_replicas.csv")
 ```
+
 
 ### anaĺise dos dados
 
@@ -190,3 +207,14 @@ ggplot(df_resultados,aes(x=M0,y=C_n,fill=Prob_invasion)) +
   theme_classic()
 ```
 
+
+# Apêndice
+
+```{r time estimative, include=FALSE,echo=FALSE,eval=FALSE}
+f_2sppSLV(N0=50, beta_n = 0.7/365.25, delta_n = 0.69/365.25, gamma_n = (0.7/365.25 - 0.69/365.25)/50, C_n =  (0.7/365.25 - 0.69/365.25)/50,
+          M0=50, beta_m = 0.7/365.25, delta_m = 0.69/365.25, gamma_m = (0.7/365.25 - 0.69/365.25)/50, C_m =  (0.7/365.25 - 0.69/365.25)/50,replicas = 50)
+start_time <- Sys.time()
+plyr::rdply(.n = 2,f_loop())
+end_time <- Sys.time()
+end_time - start_time
+```
