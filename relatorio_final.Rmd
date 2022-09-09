@@ -15,17 +15,25 @@ knitr::opts_chunk$set(echo = FALSE,message = FALSE,warning = FALSE,cache = TRUE)
 library(trackdown)
 # both overwrite: 
 # to update:
-upload_file(file ="relatorio_final.Rmd",
+update_file(file ="relatorio_final.Rmd",
             gpath = "mestrado/disciplinas/BIE5716/",
             hide_code = TRUE)
-
+dow
 ```
 
-# Introdução
+# Introdução  
+   
+     
 O modelo de crescimento exponencial incorpora o princípio fundamental de que a vida provém de outra e assim examina o comportamento de uma população que pode crescer sem limitação alguma. Ao incluir a influência que o aumento na densidade populacional pode ter na limitação do crescimento, o modelo logístico incorpora outro princípio fundamental que é o da perda de excedente de indivíduos esperado por um crescimento ilimitado. Caso uma população crescesse de forma exponencial todo o universo conhecido poderia estar colonizado por um único tipo de vida. Outro componente essencial da modulação dos eventos demográficos é a interação com outras espécies. 
+  
+  
 Aqui vamos explorar um modelo de competição de 2 populações em crescimento denso dependente, N e M. Vamos modelar o sistema usando um arcabouço de processos de difusão (Gillespie 1977) onde as reações individuais, microscópicas, são explicitadas com a intenção de descrever o comportamento macroscópico do sistema em termos do tamanho populacional das espécies. Os modelos de competição de populações em denso dependência do arcabouço de reações de difusão (estocásticos) diferem dos modelos baseados em taxas constantes (determinísticos), pois os eventos demográficos são representados como eventos probabilísticos que podem ou não ocorrer em intervalos de tempo muito pequenos. Dessa forma, os modelos estocásticos possibilitam eventos de extinção de populações que poderiam permanecer indefinidamente no predito determinístico; ou flutuações nos tamanhos populacionais, propriedade ausente nos modelos determinísticos de denso dependência linear. Os modelos estocásticos podem ser descritos por uma equação mestra, um conjunto de equações diferenciais de primeira ordem que descrevem como a probabilidade de todos os possíveis estados do sistema variam no tempo contínuo. A partir da equação mestra é possível calcular  a equação diferencial do primeiro momento da distribuição de probabilidades do sistema. Usando a aproximação de campo médio, onde é pressuposto variância zero, a equação diferencial do primeiro momento converge com a solução determinística. A abordagem alternativa ao uso da equação mestra, que descreve todos os estados do sistema, é simular possíveis trajetórias indivíduais do sistema implementando o algoritmo de Gillespie (1977). A ideia do algoritmo se baseia no fato de que a distribuição de tempos entre mudanças de estados pode ser descrita por uma distribuição exponencial, então computamos separadamente as mudanças de estado e o tempo entre mudanças, reduzindo o tempo de simulação. 
+  
+    
 Com a intenção de avaliar se é possível ter alguma intuição sobre o comportamento do sistema estocástico a partir da aproximação de campo médio, me pergunto como o predito determinístico diverge do observado em uma série de simulações individuais do processo estocástico. Uma expectativa é que a probabilidade da espécie invasora substituir a espécie residente deve aumentar quanto maior o tamanho populacional inicial da invasora e maior a assimetria competitiva em favor da invasora. Pois, quanto menor o tamanho populacional maior a chance de uma sequência de eventos demográficos leve à extinção da invasora, mesmo quando dominante. E quanto maior a assimetria competitiva em favor da invasora, maior a probabilidade da espécie residente reduzir em abundância por possível evento demográfico.
 
+  
+    
 ## Reações  
   
 Vamos modelar a mudança de estado do sistema, descrito por (n,m), onde n e m são a abundância de N e M, respectivamente. O modelo considera possíveis mudanças discretas de 1 indivíduo no sistema em um intervalo de tempo muito pequeno dt. As oito reações consideradas estão disponíveis na tabela 1, elas constituem um modelo de denso dependência em que a competição interespecífica é modelada de forma similar à da competição intraespecífica: pela probabilidade de exclusão de um dos dois indivíduos por evento de colisão de dois indivíduos. O modelo pressupõe que não é possível distinguir entre indivíduos de uma mesma espécie, assim, o parâmetro $\gamma$ descreve a probabilidade de qualquer um dos dois indivíduos ser excluído, por isso ele está dividido por 2.
@@ -74,15 +82,51 @@ $$
 A aproximação de campo médio pressupõe que $<n>^2 = <n^2>$, $<m>^2 = <m^2>$, $<nm> = <n><m>$. Esse pressuposto implica que a variância da dinâmica populacional denso dependente é zero e que as populações são independentes. Outro pressuposto possível para simplificar a aproximação é de que $\beta$ ou $\delta$ >> $\gamma$, assim $\gamma$ pode ser omitido como fator do primeiro momento. Essa aproximação é útil pois permite a convergência das equações acima com o modelo determinístico de competição interespecífica de duas populações com crescimento denso dependente (eq. 3a e 3b). A investigação desse modelo determinístico mostra o quê poderíamos esperar no equilíbrio caso não houvesse nenhuma flutuação devido à estocástica dos eventos demográficos.
 
 $$
-\frac{d <n>}{d t} = <n> (\beta_n - \delta_n + \gamma_n2^{-1})- <n>^2\gamma_n2^{-1} - <n><m>C_n
+\frac{d <n>}{d t} = <n> (\beta_n - \delta_n)- <n>^2\gamma_n2^{-1} - <n><m>C_n
 $$
 $$
-\frac{d <m>}{d t} = <m> (\beta_m - \delta_m + \gamma_m2^{-1})- <m>^2\gamma_m2^{-1} - <m><n>C_m
+\frac{d <m>}{d t} = <m> (\beta_m - \delta_m)- <m>^2\gamma_m2^{-1} - <m><n>C_m
 $$
     
 ## Cenários de Assimetria Competitiva  
   
 Para facilitar as análises vamos variar apenas o parâmetro que ajusta a probabilidade de exclusão de uma espécie pela outra por colisão (parâmetros $C_n$ e $C_m$, tabela 1). Os demais parâmetros populacionais serão iguais: $\beta =$ `r format(0.7/365.25,scientific = TRUE,digits = 4)`, $\delta =$ `r format(0.69/365.25,scientific = TRUE,digits = 4)`, $\gamma =$ `r format(2*(0.7/365.25-0.69/365.25)/50,scientific = TRUE,digits = 4)`. Os parâmetros de competição interespecífica ($C_n$ e $C_m$) variam entre $C_n = C_m = \gamma$ e $C_n = C_m = 2\gamma$, explorando dois extremos onde a espécie residente pode ser a espécie competitiva superior ou inferior. 
+
+    
+```{r desenho expercimental invasão, eval=FALSE,echo=FALSE}
+# pacotes
+library(deSolve)
+library(plyr)
+library(doMC)
+library(tidyverse)
+# dados
+df_sim <- data.frame(k = 50, beta = 0.7/365.25, delta = 0.69/365.25) |> 
+  mutate(gamma = 2* (beta - delta) / k)
+df_sim <- cbind(df_sim,
+                expand.grid(M0 = floor(df_sim$k * c(0.05,seq(0.2,1,by=0.2))), # 
+                            C_n = df_sim$gamma * seq(1,2,length.out=6))) |> 
+  mutate(C_m = gamma)
+df_sim <- rbind(filter(df_sim,C_n!=df_sim$gamma[1]),
+                mutate(df_sim,
+                       C_m=C_n,C_n=gamma)) |> 
+  mutate(id = 1:n(),
+         path = paste0("csv/id_",id,".csv"))
+df_sim |> 
+  mutate(M0_plot = M0/50,
+         C_n.m = C_n - C_m,
+         C_n.m_plot = C_n.m/gamma) |> 
+  ggplot(aes(x=M0_plot,y=C_n.m_plot)) + 
+  geom_hline(yintercept = 0,color="red",alpha=0.4) +
+  geom_point() +
+  labs(title = "Cenários Simulados",
+       x="initial abundance m (%K = 50)",y=expression(C[n] - C[m]*"(%)"),
+       subtitle = "n = resident specie, m = invader specie") +
+  theme_bw()
+```
+  
+<!-- __Figura 1__ Cenários simulados de competição interespecífica.  Eixo x: diferença no parâmetro C da espécie residente pela invasora, dividido pelo parâmetro $\gamma$. -->
+
+
 
 ## The computational model
 
@@ -120,56 +164,10 @@ readr::write_csv(df_dinamica,file = path_csv)
 }
 ```
 
-```{r 2sppDLV, echo=FALSE,eval=FALSE,include=TRUE}
-f_2sppDlv <- function(t,y,p){
-  N <- y[1]
-  M <- y[2]
-  with(as.list(p),{
-    dNdt <- (beta - delta)*N - gamma*(N^2)/2 - C_n*N*M
-    dMdt <- (beta - delta)*M - gamma*(M^2)/2 - C_m*M*N
-    return(list(c(dNdt,dMdt)))
-  })
-}
-```
 
-    
-```{r desenho expercimental invasão, eval=FALSE,echo=FALSE}
-# pacotes
-library(deSolve)
-library(plyr)
-library(doMC)
-library(tidyverse)
-# dados
-df_sim <- data.frame(k = 50, beta = 0.7/365.25, delta = 0.69/365.25) |> 
-  mutate(gamma = 2* (beta - delta) / k)
-df_sim <- cbind(df_sim,
-                expand.grid(M0 = floor(df_sim$k * c(0.05,seq(0.2,1,by=0.2))), # 
-                            C_n = df_sim$gamma * seq(1,2,length.out=6))) |> 
-  mutate(C_m = gamma)
-df_sim <- rbind(filter(df_sim,C_n!=df_sim$gamma[1]),
-                mutate(df_sim,
-                       C_m=C_n,C_n=gamma)) |> 
-  mutate(id = 1:n(),
-         path = paste0("csv/id_",id,".csv"))
-df_sim2 <- df_sim |> select(!path)
-df_sim2[,c(2:4,6:7)] <- apply(df_sim2[,c(2:4,6:7)],2,function(x) x*365.25)  
 
-df_sim |> 
-  mutate(M0_plot = M0/50,
-         C_n.m = C_n - C_m,
-         C_n.m_plot = C_n.m/gamma) |> 
-  ggplot(aes(x=M0_plot,y=C_n.m_plot)) + 
-  geom_hline(yintercept = 0,color="red",alpha=0.4) +
-  geom_point() +
-  labs(title = "Cenários Simulados",
-       x="initial abundance m (%K = 50)",y=expression(C[n] - C[m]*"(%)"),
-       subtitle = "n = resident specie, m = invader specie") +
-  theme_bw()
-```
-  
-__Figura 1__ Cenários simulados de competição interespecífica.  Eixo x: diferença no parâmetro C da espécie residente pela invasora, dividido pelo parâmetro $\gamma$.
 
-```{r simulação do modelo nos cenários explorados, eval=FALSE,echo=FALSE,include=TRUE}
+```{r simulação do modelo estocastico, eval=FALSE,echo=FALSE,include=TRUE}
 registerDoMC(3)
 plyr::a_ply(df_sim,1,
             function(X) do.call("f_2sppSLV",
@@ -183,37 +181,49 @@ plyr::a_ply(df_sim,1,
 
 
 
-```{r simulacao do modelo deterministico}
+```{r modelo deterministico,eval=FALSE,include=FALSE,echo=FALSE}
 f_2sppDLV <- function(X,max_t,int_t){
  f_ode<- function(t,y,p){
    N <- y[1]
    M <- y[2]
    with(as.list(p),{
      dNdt <- (beta - delta)*N - gamma*(N^2)/2 - C_n*N*M
-     dMdt <- (beta - delta)*M - gamma*(M^2)/2 - C_m*M*Nreturn(list(c(dNdt,dMdt)))
+     dMdt <- (beta - delta)*M - gamma*(M^2)/2 - C_m*M*N
+     return(list(c(dNdt,dMdt)))
    })
    }
  p <- unlist(select(X,beta:gamma,C_n:C_m))
  y0 <- unlist(X[,c("k","M0")])
  names(y0) <- c("N","M")
  times <- seq(0,max_t,int_t)
- df_ab.det <- ode(y=y0,times = times,func = f_2sppDlv,parms = p)
+ df_ab.det <- ode(y=y0,times = times,func = f_ode,parms = p)
  return(df_ab.det)
 }
-#
+```
+
+```{r simulacao do modelo deterministico,echo=FALSE,eval=FALSE}
+# resultados dos modelos estocasticos
 df_resultados <- read_csv(file = "resultados/df_resultados.csv") |> 
   mutate(t_max_anos = t_max/365.25)
-df_resultados$t_max_anos |> summary()
-#
-df_sim2 |> names
-df_resultsDeterministicos <- adply(df_sim2,1,function(df) do.call("f_2sppDLV",X=df,max_t=400,int_t=0.05)  )
+# df_resultados$t_max_anos |> summary()
+# df par simulações
+df_sim2 <- inner_join(df_sim,
+                      select(df_resultados,id,t_max_anos),
+                      by="id") |> 
+  mutate(path=paste0("csv/id_",id,"_MFieldApp.csv"))
+# simulação
+# X <- df_sim2[1,]
+# df_resultsDeterministicos <- adply(df_sim2,1,function(df) do.call("f_2sppDLV",X=df,max_t=400,int_t=0.05)  )
+plyr::a_ply(df_sim2,function(df) f_2sppDLV(X=df, max_t = df$t_max_anos,int_t = 0.02))
+
+
 ```
 
 
 
 ### anaĺise dos dados
 
-```{r análises preparatórias, eval=FALSE, echo=FALSE, include=FALSE}
+```{r análises preparatórias 1 - prob de, eval=FALSE, echo=FALSE, include=FALSE}
 f_resultados <- function(X){
   read_csv(X$path) |>
     group_by(.n) |>
@@ -237,7 +247,7 @@ df_resultados <- df_rep.tFinal |>
   arrange(C_nm)
 #
 write_csv(df_rep.tFinal,file = "resultados/df_rep_tFinal.csv")
-write_csv(df_resultados,file="resultados/df_resultados.csv")
+write_csv(df_resultados,file = "resultados/df_resultados.csv")
 ```
 
 ```{r modelo estatístico para descrever a probabilidade de invasao,echo=FALSE,include=FALSE,eval=FALSE}
@@ -258,6 +268,7 @@ md_P.replacement <- gam(cbind(c_invasion,50-c_invasion) ~ s(M0.z,bs = "cr") + s(
                         family = binomial(link = logit),data = df_resultados)
 summary(md_P.replacement)
 ```
+
 ```{r graf exp prob replace the resident, echo=FALSE,include=TRUE,eval=TRUE}
 library(tidyverse)
 df_resultados <- readr::read_csv("resultados/df_resultados.csv")
@@ -273,6 +284,29 @@ df_resultados |>
   # scale_x_continuous(breaks = seq(0.05,0.95,by=0.10)) +
   ggtitle("Prob(replace the resident specie)") +
   theme_classic()
+```
+
+  
+### The mean field approximation  
+  
+    
+```{r 2sppDLV, echo=TRUE,eval=FALSE,include=TRUE}
+f_2sppDLV <- function(X,max_t,int_t){
+ f_ode<- function(t,y,p){
+   N <- y[1]
+   M <- y[2]
+   with(as.list(p),{
+     dNdt <- (beta - delta)*N - gamma*(N^2)/2 - C_n*N*M
+     dMdt <- (beta - delta)*M - gamma*(M^2)/2 - C_m*M*Nreturn(list(c(dNdt,dMdt)))
+   })
+   }
+ p <- unlist(select(X,beta:gamma,C_n:C_m))
+ y0 <- unlist(X[,c("k","M0")])
+ names(y0) <- c("N","M")
+ times <- seq(0,max_t,int_t)
+ df_ab.det <- ode(y=y0,times = times,func = f_2sppDlv,parms = p)
+ return(df_ab.det)
+}
 ```
 
 # Apêndice
