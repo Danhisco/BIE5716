@@ -105,6 +105,20 @@ library(deSolve)
 library(plyr)
 library(doMC)
 library(tidyverse)
+# dados completo
+k=50
+df_sim0 <- data.frame(k = 50, beta = 0.7/365.25, delta = 0.69/365.25) |> 
+  mutate(gamma = 2* (beta - delta) / k)
+df_sim0 <- cbind(df_sim0,
+                 expand.grid(M0 = floor(df_sim0$k * c(0.05,seq(0.1,1,by=0.1))),
+                             C_n = df_sim0$gamma * seq(1,2,length.out=6))) |> 
+  mutate(C_m = gamma)
+df_sim0 <- rbind(filter(df_sim0,C_n!=df_sim0$gamma[1]),
+                 mutate(df_sim0,
+                        C_m=C_n,C_n=gamma)) |> 
+  mutate(C_nm = (C_n - C_m)/gamma) %>% 
+  arrange(M0,C_nm) %>% 
+  mutate(id1 = 1:n())
 # dados
 df_sim <- data.frame(k = 50, beta = 0.7/365.25, delta = 0.69/365.25) |> 
   mutate(gamma = 2* (beta - delta) / k)
@@ -320,7 +334,7 @@ f_dist <- function(df){
   data.frame(sqrt((df$n-df$N)^2+(df$m-df$M)^2))
 }
 # apply the function by id
-registerDoMC(3)
+registerDoMC(2)
 df_dist <- ddply(df_replicas,"id",f_dist,.parallel = TRUE) %>% 
   pivot_longer(!id,names_to = ".n", values_to = "dist_StoDet") %>% 
   mutate(.n=as.integer(gsub("V","",.n)))
@@ -359,3 +373,54 @@ df_resultados$C_nm.z <- f_z(df_resultados$C_nm)
 ```
 
 ### LMMM
+
+
+## EXTRAS: juntar dados de simulação
+
+```{r uniao das tabela construidas separadamente}
+# dados
+df_sim <- data.frame(k = 50, beta = 0.7/365.25, delta = 0.69/365.25) |> 
+  mutate(gamma = 2* (beta - delta) / k)
+df_sim <- cbind(df_sim,
+                expand.grid(M0 = floor(df_sim$k * c(0.05,seq(0.2,1,by=0.2))), # 
+                            C_n = df_sim$gamma * seq(1,2,length.out=6))) |> 
+  mutate(C_m = gamma)
+df_sim <- rbind(filter(df_sim,C_n!=df_sim$gamma[1]),
+                mutate(df_sim,
+                       C_m=C_n,C_n=gamma)) |> 
+  mutate(id = 1:n())
+#
+df_sim3 <- data.frame(k = 50, beta = 0.7/365.25, delta = 0.69/365.25) |> 
+  mutate(gamma = 2* (beta - delta) / k)
+df_sim3 <- cbind(df_sim3,
+                 expand.grid(M0 = floor(df_sim3$k[1] * seq(0.1,0.9,by=0.2)), # 
+                            C_n = df_sim3$gamma[1] * seq(1,2,length.out=6))) |> 
+  mutate(C_m = gamma)
+df_sim3 <- rbind(filter(df_sim3,C_n!=df_sim3$gamma[1]),
+                mutate(df_sim3,
+                       C_m=C_n,C_n=gamma)) %>% 
+  mutate(id = (nrow(df_sim)+1):(n()+nrow(df_sim)))
+#
+df_aud <- rbind(df_sim,df_sim3) %>% 
+  mutate(C_nm = (C_n - C_m)/gamma) %>% 
+  arrange(M0,C_nm) %>% 
+  mutate(id2 = 1:n())
+df_aud %>% head(.,n=12)
+# 
+f_nomes_csv <- function(df){
+  df_renome <- read_csv(paste0("csv/id_",df$id,".csv"))
+  write_csv(df_renome, file = paste0("csv_final/id_",df$id2,".csv"))
+}
+registerDoMC(2)
+plyr::a_ply(df_aud,1,f_nomes_csv,.parallel = TRUE)
+#
+f_aud <- function(df){
+  df_id1 <- read_csv(paste0("csv/id_",df$id,".csv"))
+  df_id2 <- read_csv(paste0("csv_final/id_",df$id2,".csv"))
+  unique(df_id1==df_id2)
+}
+unique(adply(df_aud,1,f_aud))
+#
+write_csv(df_aud,file = "resultados/df_auditoria.csv")
+```
+
