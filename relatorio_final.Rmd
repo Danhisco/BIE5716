@@ -18,21 +18,28 @@ library(trackdown)
 update_file(file ="relatorio_final.Rmd",
             gpath = "mestrado/disciplinas/BIE5716/",
             hide_code = TRUE)
-dow
+download_file(file ="relatorio_final.Rmd",
+              gpath = "mestrado/disciplinas/BIE5716/")
 ```
 
 # Introdução  
    
      
 O modelo de crescimento exponencial incorpora o princípio fundamental de que a vida provém de outra e assim examina o comportamento de uma população que pode crescer sem limitação alguma. Ao incluir a influência que o aumento na densidade populacional pode ter na limitação do crescimento, o modelo logístico incorpora outro princípio fundamental que é o da perda de excedente de indivíduos esperado por um crescimento ilimitado. Caso uma população crescesse de forma exponencial todo o universo conhecido poderia estar colonizado por um único tipo de vida. Outro componente essencial da modulação dos eventos demográficos é a interação com outras espécies. 
-  
-  
-Aqui vamos explorar um modelo de competição de 2 populações em crescimento denso dependente, N e M. Vamos modelar o sistema usando um arcabouço de processos de difusão (Gillespie 1977) onde as reações individuais, microscópicas, são explicitadas com a intenção de descrever o comportamento macroscópico do sistema em termos do tamanho populacional das espécies. Os modelos de competição de populações em denso dependência do arcabouço de reações de difusão (estocásticos) diferem dos modelos baseados em taxas constantes (determinísticos), pois os eventos demográficos são representados como eventos probabilísticos que podem ou não ocorrer em intervalos de tempo muito pequenos. Dessa forma, os modelos estocásticos possibilitam eventos de extinção de populações que poderiam permanecer indefinidamente no predito determinístico; ou flutuações nos tamanhos populacionais, propriedade ausente nos modelos determinísticos de denso dependência linear. Os modelos estocásticos podem ser descritos por uma equação mestra, um conjunto de equações diferenciais de primeira ordem que descrevem como a probabilidade de todos os possíveis estados do sistema variam no tempo contínuo. A partir da equação mestra é possível calcular  a equação diferencial do primeiro momento da distribuição de probabilidades do sistema. Usando a aproximação de campo médio, onde é pressuposto variância zero, a equação diferencial do primeiro momento converge com a solução determinística. A abordagem alternativa ao uso da equação mestra, que descreve todos os estados do sistema, é simular possíveis trajetórias indivíduais do sistema implementando o algoritmo de Gillespie (1977). A ideia do algoritmo se baseia no fato de que a distribuição de tempos entre mudanças de estados pode ser descrita por uma distribuição exponencial, então computamos separadamente as mudanças de estado e o tempo entre mudanças, reduzindo o tempo de simulação. 
-  
-    
-Com a intenção de avaliar se é possível ter alguma intuição sobre o comportamento do sistema estocástico a partir da aproximação de campo médio, me pergunto como o predito determinístico diverge do observado em uma série de simulações individuais do processo estocástico. Uma expectativa é que a probabilidade da espécie invasora substituir a espécie residente deve aumentar quanto maior o tamanho populacional inicial da invasora e maior a assimetria competitiva em favor da invasora. Pois, quanto menor o tamanho populacional maior a chance de uma sequência de eventos demográficos leve à extinção da invasora, mesmo quando dominante. E quanto maior a assimetria competitiva em favor da invasora, maior a probabilidade da espécie residente reduzir em abundância por possível evento demográfico.
 
+<!-- #################################################################### -->
+<!-- #################################################################### -->
+Uma expectativa é que a probabilidade da espécie invasora substituir a espécie residente deve aumentar quanto maior o tamanho populacional inicial da invasora e maior a assimetria competitiva em favor da invasora. 
+Com a intenção de avaliar se é possível ter alguma intuição sobre o comportamento do sistema estocástico a partir da aproximação de campo médio, me pergunto como o predito determinístico diverge do observado em uma série de simulações individuais do processo estocástico. 
+Pois, quanto menor o tamanho populacional maior a chance de uma sequência de eventos demográficos leve à extinção da invasora, mesmo quando dominante. E quanto maior a assimetria competitiva em favor da invasora, maior a probabilidade da espécie residente reduzir em abundância por possível evento demográfico.
+<!-- #################################################################### -->
+<!-- ####################################################################  -->
+
+Os modelos de competição de populações em denso dependência do arcabouço de reações de difusão (estocásticos) diferem dos modelos baseados em taxas constantes (determinísticos), pois os eventos demográficos são representados como eventos probabilísticos que podem ou não ocorrer em intervalos de tempo muito pequenos. Dessa forma, os modelos estocásticos possibilitam eventos de extinção de populações que poderiam permanecer indefinidamente no predito determinístico; ou flutuações nos tamanhos populacionais, propriedade ausente nos modelos determinísticos de denso dependência linear. Os modelos estocásticos podem ser descritos por uma equação mestra, um conjunto de equações diferenciais de primeira ordem que descrevem como a probabilidade de todos os possíveis estados do sistema variam no tempo contínuo. A partir da equação mestra é possível calcular  a equação diferencial do primeiro momento da distribuição de probabilidades do sistema. Usando a aproximação de campo médio, onde é pressuposto variância zero, a equação diferencial do primeiro momento converge para a solução determinística. A abordagem alternativa ao uso da equação mestra, que descreve todos os estados do sistema, é simular possíveis trajetórias individuais do sistema implementando o algoritmo de Gillespie (1977).
   
+Aqui vamos explorar um modelo de competição de 2 populações em crescimento denso dependente, N e M. Vamos modelar o sistema usando um arcabouço de processos de difusão (Gillespie 1977) onde as reações individuais, microscópicas, são explicitadas com a intenção de descrever o comportamento macroscópico do sistema em termos do tamanho populacional das espécies. Avaliei a probabilidade da espécie invasora substituir a espécie residente em sua capacidade de suporte em função do tamanho populacional inicial da espécie invasora e da assimetria competitiva. Além disso, avaliei o erro da aproximação de campo médio na estimativa da abundância das populações no momento da exclusão de uma delas.
+
+# Métodos
     
 ## Reações  
   
@@ -58,8 +65,7 @@ df_tabela1 %>%
 
 ```
   
-## The master equation and the mean-field approximation   
-   
+## The master equation and the mean-field approximation      
      
 A partir das reações é possível desenvolver uma equação mestra que descreve a taxa de mudança da probabilidade de um determinado estado [$\frac{\partial P(n,m,t)}{\partial t}$] pela diferença na taxa da probabilidade de entrada e saída deste estado (equação 1). Na primeira linha depois da igualdade, há a soma das taxa com que N pode perder um indivíduo, indo do estado (n+1,m) para o estado (n,m). Na segunda linha a taxa com que N pode ganhar um indivíduo, indo do estado (n-1,m) para o estado (n,m). Nas linhas 3 e 4 a mesma lógica para M. Na quinta linha há a taxa de saída do estado (n,m). Para detalhes veja tabela 1.
 
@@ -90,7 +96,7 @@ $$
     
 ## Cenários de Assimetria Competitiva  
   
-Para facilitar as análises vamos variar apenas o parâmetro que ajusta a probabilidade de exclusão de uma espécie pela outra por colisão (parâmetros $C_n$ e $C_m$, tabela 1). Os demais parâmetros populacionais serão iguais: $\beta =$ `r format(0.7/365.25,scientific = TRUE,digits = 4)`, $\delta =$ `r format(0.69/365.25,scientific = TRUE,digits = 4)`, $\gamma =$ `r format(2*(0.7/365.25-0.69/365.25)/50,scientific = TRUE,digits = 4)`. Os parâmetros de competição interespecífica ($C_n$ e $C_m$) variam entre $C_n = C_m = \gamma$ e $C_n = C_m = 2\gamma$, explorando dois extremos onde a espécie residente pode ser a espécie competitiva superior ou inferior. 
+Para facilitar as análises variamos apenas o parâmetro que ajusta a probabilidade de exclusão de uma espécie pela outra por colisão (parâmetros $C_n$ e $C_m$, tabela 1). Os demais parâmetros populacionais serão iguais: $\beta =$ `r format(0.7/365.25,scientific = TRUE,digits = 4)`, $\delta =$ `r format(0.69/365.25,scientific = TRUE,digits = 4)`, $\gamma =$ `r format(2*(0.7/365.25-0.69/365.25)/50,scientific = TRUE,digits = 4)`. Os parâmetros de competição interespecífica ($C_n$ e $C_m$) variam entre $\gamma$ e $2\gamma$, explorando dois extremos onde a espécie invasora pode ser a espécie competitiva superior ou inferior. 
 
     
 ```{r desenho expercimental invasão, eval=FALSE,echo=FALSE}
@@ -130,7 +136,7 @@ df_sim |>
 
 ## The computational model
 
-O tempo entre mudança de estados pode ser obtido pela divisão do log de uma amostra de distribuição uniforme padrão pela soma das taxas de saída do estado (janela de código 1). Existem 4 possíveis transições de estado: cada uma das duas espécies pode ganhar ou perder um indivíduo por evento demográfico no intervalo de tempo dt. A taxa de ganho de um indivíduo de N ($n\_p$) é  $n\_p=\beta n$. A taxa de perda de um indivíduo de N ($n\_m$) é $n\_m = n[\delta +(n-1)\gamma2^{-1} + mC_n]$. A mesma lógica se aplica para as taxas de ganho e perda da espécie M (eq. 1 e janela de código 1). Após o sorteio do tempo do próximo evento demográfico, é feito um sorteio da mudança de estado com probabilidade dada pela contribuição relativa de cada taxa de saída (janela de código 1), então o sistema é atualizado. Nossa simulação termina quando alguma população atinge o zero. 
+A ideia do algoritmo de Gillespie (1977) se baseia no fato de que a distribuição de tempos entre mudanças de estados pode ser descrita por uma distribuição exponencial, então computamos separadamente as mudanças de estado e o tempo entre mudanças, reduzindo o tempo de simulação.  O tempo entre mudança de estados pode ser obtido pela divisão do log de uma amostra de distribuição uniforme padrão pela soma das taxas de saída do estado (janela de código 1). Existem 4 possíveis transições de estado: cada uma das duas espécies pode ganhar ou perder um indivíduo por evento demográfico no intervalo de tempo dt. A taxa de ganho de um indivíduo de N ($n\_p$) é  $n\_p=\beta n$. A taxa de perda de um indivíduo de N ($n\_m$) é $n\_m = n[\delta +(n-1)\gamma2^{-1} + mC_n]$. A mesma lógica se aplica para as taxas de ganho e perda da espécie M (eq. 1 e janela de código 1). Após o sorteio do tempo do próximo evento demográfico, é feito um sorteio da mudança de estado com probabilidade dada pela contribuição relativa de cada taxa de saída (janela de código 1), então o sistema é atualizado. Nossa simulação termina quando alguma população atinge o zero. 
 
 __janela de código 1__
 
@@ -163,9 +169,46 @@ df_dinamica <- plyr::rdply(.n = replicas,f_loop())
 readr::write_csv(df_dinamica,file = path_csv)
 }
 ```
+  
+    
+### anaĺise dos dados
+
+As simulações do modelo estocástico param quando uma das duas espécies é extinta. Para cada combinação de parâmetro (id) foram feitas 100 réplicas onde foi contabilizado o número delas em que a espécie invasora não é excluída. Para cada réplica, calculei a distância cartesiana da abundância das duas espécies no final da simulação com a abundância esperada segundo a aproximação de campo médio no tempo final da simulação. 
+Usei um GLM binomial para descrever a probabilidade da espécie invasora excluir a espécie residente em função do tamanho populacional inicial da espécie invasora e da assimetria competitiva. Defini assimetria competitiva como a diferença no coeficiente de competição interespecífica da espécie residente ($C_n$) e o coeficiente de competição interespecífica da espécie invasora ($C_m$ ). Para cada réplica, agrupei os dados por id e usei um LMM gaussiano para descrever a distância do observado nas simulações estocásticas com o esperado pela aproximação de campo médio em função das mesmas preditoras do GLM binomial.
 
 
+```{r graf exp prob replace the resident, echo=FALSE,include=TRUE,eval=TRUE}
+library(tidyverse)
+df_resultados <- readr::read_csv("resultados/df_resultados.csv")
+df_resultados |> 
+  mutate(Prob_invasion = c_invasion/50,
+         propM0 = M0/50) |> 
+  ggplot(aes(x=propM0,y=C_nm,fill=Prob_invasion)) +
+  geom_tile() +
+  scale_fill_distiller(palette = "Spectral") +
+  labs(fill="",x="M0, initial pop. size of invader (%K)",y="Cn - Cm (%)") +
+  coord_cartesian(expand = FALSE) +
+  # scale_y_continuous(breaks = seq(0,20,by=4)) +
+  # scale_x_continuous(breaks = seq(0.05,0.95,by=0.10)) +
+  ggtitle("Prob(replace the resident specie)") +
+  theme_classic()
+```
 
+  
+
+# Apêndice
+
+```{r time estimative, include=FALSE,echo=FALSE,eval=FALSE}
+f_2sppSLV(N0=50, beta_n = 0.7/365.25, delta_n = 0.69/365.25, gamma_n = (0.7/365.25 - 0.69/365.25)/50, C_n =  (0.7/365.25 - 0.69/365.25)/50,
+          M0=50, beta_m = 0.7/365.25, delta_m = 0.69/365.25, gamma_m = (0.7/365.25 - 0.69/365.25)/50, C_m =  (0.7/365.25 - 0.69/365.25)/50,replicas = 50)
+start_time <- Sys.time()
+plyr::rdply(.n = 2,f_loop())
+end_time <- Sys.time()
+end_time - start_time
+```
+
+
+## Códigos para rodar as simulações estocasticas e deterministicas
 
 ```{r simulação do modelo estocastico, eval=FALSE,echo=FALSE,include=TRUE}
 registerDoMC(3)
@@ -177,12 +220,10 @@ plyr::a_ply(df_sim,1,
             .parallel = TRUE)
 ```
 
+### the mean field approximation
 
-
-
-
-```{r modelo deterministico,eval=FALSE,include=FALSE,echo=FALSE}
-f_2sppDLV <- function(X,max_t,int_t){
+```{r modelo deterministico,eval=FALSE,include=FALSE,echo=TRUE}
+f_2sppDLV <- function(X,max_t,int_t,path_csv){
  f_ode<- function(t,y,p){
    N <- y[1]
    M <- y[2]
@@ -197,9 +238,11 @@ f_2sppDLV <- function(X,max_t,int_t){
  names(y0) <- c("N","M")
  times <- seq(0,max_t,int_t)
  df_ab.det <- ode(y=y0,times = times,func = f_ode,parms = p)
- return(df_ab.det)
+ df_ab.det <- as.data.frame(df_ab.det)
+ readr::write_csv(x = df_ab.det,file=path_csv)
 }
 ```
+
 
 ```{r simulacao do modelo deterministico,echo=FALSE,eval=FALSE}
 # resultados dos modelos estocasticos
@@ -213,17 +256,21 @@ df_sim2 <- inner_join(df_sim,
   mutate(path=paste0("csv/id_",id,"_MFieldApp.csv"))
 # simulação
 # X <- df_sim2[1,]
-# df_resultsDeterministicos <- adply(df_sim2,1,function(df) do.call("f_2sppDLV",X=df,max_t=400,int_t=0.05)  )
-plyr::a_ply(df_sim2,function(df) f_2sppDLV(X=df, max_t = df$t_max_anos,int_t = 0.02))
-
-
+registerDoMC(3)
+intervalo_EulerMethod <- 0.02
+plyr::a_ply(df_sim2[5:6,],1,
+            function(df) f_2sppDLV(X=df, 
+                                   max_t = (df$t_max_anos+10*intervalo_EulerMethod),
+                                   int_t = intervalo_EulerMethod,path_csv = df$path),
+            .parallel = TRUE)
 ```
 
 
+## Cálculo das métricas de avaliação
 
-### anaĺise dos dados
+### Contagem de eventos de substituição
 
-```{r análises preparatórias 1 - prob de, eval=FALSE, echo=FALSE, include=FALSE}
+```{r análises preparatórias 1 - df_resultados e df_replicas, eval=FALSE, echo=FALSE, include=FALSE}
 f_resultados <- function(X){
   read_csv(X$path) |>
     group_by(.n) |>
@@ -249,10 +296,55 @@ df_resultados <- df_rep.tFinal |>
 write_csv(df_rep.tFinal,file = "resultados/df_rep_tFinal.csv")
 write_csv(df_resultados,file = "resultados/df_resultados.csv")
 ```
+  
+    
+### Distância cartesiana entre abundância simulada e esperada pela aproximação de campo médio
+
+```{r versao piloto, echo=TRUE,eval=FALSE}
+# dados
+df_replicas <- read_csv("resultados/df_rep_tFinal.csv") %>% 
+  mutate(t_anos = t/365.25)
+# função 
+f_dist <- function(df){
+  # dados de entrada (modelo estocastico)
+  df <- as.data.frame(df)
+  # dados modelo deterministico
+  df_det <- read_csv(file = gsub(".csv","_MFieldApp.csv",df$path[1])) %>% 
+    as.data.frame
+  # linear approximation for the exact time
+  df <- cbind(df,
+              apply(df_det[,-1],2,
+                    function(Y) approx(x=df_det$time,y=Y,xout = df$t_anos)$y)
+              )
+  # euclidean distance between two points
+  data.frame(sqrt((df$n-df$N)^2+(df$m-df$M)^2))
+}
+# apply the function by id
+registerDoMC(3)
+df_dist <- ddply(df_replicas,"id",f_dist,.parallel = TRUE) %>% 
+  pivot_longer(!id,names_to = ".n", values_to = "dist_StoDet") %>% 
+  mutate(.n=as.integer(gsub("V","",.n)))
+# merge df_replicas with df_dist by id e .n
+df_replicas <- inner_join(df_replicas,
+                          df_dist,
+                          by=c("id",".n"))
+# gráfico exploratório
+# df_replicas %>% 
+#   ggplot(aes(x=id,y=dist_StoDet,group=id)) +
+#   geom_boxplot() +
+#   geom_jitter()
+# salvar em csv
+write_csv(df_replicas,
+          file="resultados/df_rep_tFinal.csv")
+```
+
+
+## Modelos estatísticos
+
+### GLM Binomial
 
 ```{r modelo estatístico para descrever a probabilidade de invasao,echo=FALSE,include=FALSE,eval=FALSE}
 # pacote adicional
-library(mgcv)
 # dados para o modelo estatístico
 df_resultados <- read_csv("resultados/df_resultados.csv")
 f_z <- function(x){
@@ -264,58 +356,6 @@ f_z <- function(x){
 df_resultados$M0.z <- f_z(df_resultados$M0)
 df_resultados$C_nm.z <- f_z(df_resultados$C_nm)
 # glm binomial
-md_P.replacement <- gam(cbind(c_invasion,50-c_invasion) ~ s(M0.z,bs = "cr") + s(C_nm.z,bs = "cr") + ti(M0.z,C_nm.z,bs=c("cr","cr")),
-                        family = binomial(link = logit),data = df_resultados)
-summary(md_P.replacement)
 ```
 
-```{r graf exp prob replace the resident, echo=FALSE,include=TRUE,eval=TRUE}
-library(tidyverse)
-df_resultados <- readr::read_csv("resultados/df_resultados.csv")
-df_resultados |> 
-  mutate(Prob_invasion = c_invasion/50,
-         propM0 = M0/50) |> 
-  ggplot(aes(x=propM0,y=C_nm,fill=Prob_invasion)) +
-  geom_tile() +
-  scale_fill_distiller(palette = "Spectral") +
-  labs(fill="",x="M0, initial pop. size of invader (%K)",y="Cn - Cm (%)") +
-  coord_cartesian(expand = FALSE) +
-  # scale_y_continuous(breaks = seq(0,20,by=4)) +
-  # scale_x_continuous(breaks = seq(0.05,0.95,by=0.10)) +
-  ggtitle("Prob(replace the resident specie)") +
-  theme_classic()
-```
-
-  
-### The mean field approximation  
-  
-    
-```{r 2sppDLV, echo=TRUE,eval=FALSE,include=TRUE}
-f_2sppDLV <- function(X,max_t,int_t){
- f_ode<- function(t,y,p){
-   N <- y[1]
-   M <- y[2]
-   with(as.list(p),{
-     dNdt <- (beta - delta)*N - gamma*(N^2)/2 - C_n*N*M
-     dMdt <- (beta - delta)*M - gamma*(M^2)/2 - C_m*M*Nreturn(list(c(dNdt,dMdt)))
-   })
-   }
- p <- unlist(select(X,beta:gamma,C_n:C_m))
- y0 <- unlist(X[,c("k","M0")])
- names(y0) <- c("N","M")
- times <- seq(0,max_t,int_t)
- df_ab.det <- ode(y=y0,times = times,func = f_2sppDlv,parms = p)
- return(df_ab.det)
-}
-```
-
-# Apêndice
-
-```{r time estimative, include=FALSE,echo=FALSE,eval=FALSE}
-f_2sppSLV(N0=50, beta_n = 0.7/365.25, delta_n = 0.69/365.25, gamma_n = (0.7/365.25 - 0.69/365.25)/50, C_n =  (0.7/365.25 - 0.69/365.25)/50,
-          M0=50, beta_m = 0.7/365.25, delta_m = 0.69/365.25, gamma_m = (0.7/365.25 - 0.69/365.25)/50, C_m =  (0.7/365.25 - 0.69/365.25)/50,replicas = 50)
-start_time <- Sys.time()
-plyr::rdply(.n = 2,f_loop())
-end_time <- Sys.time()
-end_time - start_time
-```
+### LMMM
