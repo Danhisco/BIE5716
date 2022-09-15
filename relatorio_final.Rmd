@@ -11,8 +11,24 @@ editor_options:
 knitr::opts_chunk$set(echo = FALSE,message = FALSE,warning = FALSE,cache = TRUE)
 ```
 
-```{r google docs management, eval=FALSE,include=FALSE}
+```{r pacotes, include=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE}
 library(trackdown)
+library(knitr)
+library(kableExtra)
+library(bbmle)
+library(boot)
+library(DHARMa)
+library(ciTools)
+library(deSolve)
+library(doMC)
+library(plyr)
+library(tidyverse)
+```
+
+
+
+```{r google docs management, eval=FALSE,include=FALSE}
+# library(trackdown)
 # both overwrite: 
 # to update:
 update_file(file ="relatorio_final.Rmd",
@@ -46,8 +62,6 @@ Aqui vamos explorar um modelo de competição de 2 populações em crescimento d
 Vamos modelar a mudança de estado do sistema, descrito por (n,m), onde n e m são a abundância de N e M, respectivamente. O modelo considera possíveis mudanças discretas de 1 indivíduo no sistema em um intervalo de tempo muito pequeno dt. As oito reações consideradas estão disponíveis na tabela 1, elas constituem um modelo de denso dependência em que a competição interespecífica é modelada de forma similar à da competição intraespecífica: pela probabilidade de exclusão de um dos dois indivíduos por evento de colisão de dois indivíduos. O modelo pressupõe que não é possível distinguir entre indivíduos de uma mesma espécie, assim, o parâmetro $\gamma$ descreve a probabilidade de qualquer um dos dois indivíduos ser excluído, por isso ele está dividido por 2.
 
 ```{r tabela 1}
-library(knitr)
-library(kableExtra)
 df_tabela1 <- data.frame(reactions = c("n -> n + n","n -> 0","n + n -> n","n + m -> m",
                                        "m -> m + m","m -> 0","m + m -> m","m + n -> n"),
                          description = c("reprod. assex. de N","morte de N","comp. intraesp. de N","exclusão de N por M",
@@ -100,11 +114,6 @@ Para facilitar as análises variamos apenas o parâmetro que ajusta a probabilid
 
     
 ```{r desenho expercimental invasão, eval=FALSE,echo=FALSE}
-# pacotes
-library(deSolve)
-library(plyr)
-library(doMC)
-library(tidyverse)
 # dados completo
 k=50
 df_sim0 <- data.frame(k = 50, beta = 0.7/365.25, delta = 0.69/365.25) |> 
@@ -118,24 +127,16 @@ df_sim0 <- rbind(filter(df_sim0,C_n!=df_sim0$gamma[1]),
                         C_m=C_n,C_n=gamma)) |> 
   mutate(C_nm = (C_n - C_m)/gamma) %>% 
   arrange(M0,C_nm) %>% 
-  mutate(id1 = 1:n())
-# dados
-df_sim <- data.frame(k = 50, beta = 0.7/365.25, delta = 0.69/365.25) |> 
-  mutate(gamma = 2* (beta - delta) / k)
-df_sim <- cbind(df_sim,
-                expand.grid(M0 = floor(df_sim$k * c(0.05,seq(0.2,1,by=0.2))), # 
-                            C_n = df_sim$gamma * seq(1,2,length.out=6))) |> 
-  mutate(C_m = gamma)
-df_sim <- rbind(filter(df_sim,C_n!=df_sim$gamma[1]),
-                mutate(df_sim,
-                       C_m=C_n,C_n=gamma)) |> 
   mutate(id = 1:n(),
-         path = paste0("csv/id_",id,".csv"))
-df_sim |> 
-  mutate(M0_plot = M0/50,
-         C_n.m = C_n - C_m,
-         C_n.m_plot = C_n.m/gamma) |> 
-  ggplot(aes(x=M0_plot,y=C_n.m_plot)) + 
+         path = paste0("csv/md_Estocastico/id_",id,".csv"))
+write_csv(df_sim0,file = "csv/df_sim0.csv")
+```
+```{r graficos dos cenarios simulados, echo=FALSE,eval=TRUE,cache=TRUE}
+df_sim0 <- read_csv("csv/df_sim0.csv")
+# gráficos
+df_sim0 |> 
+  mutate(M0_plot = M0/50) |> 
+  ggplot(aes(x=M0_plot,y=C_nm)) + 
   geom_hline(yintercept = 0,color="red",alpha=0.4) +
   geom_point() +
   labs(title = "Cenários Simulados",
@@ -144,7 +145,7 @@ df_sim |>
   theme_bw()
 ```
   
-<!-- __Figura 1__ Cenários simulados de competição interespecífica.  Eixo x: diferença no parâmetro C da espécie residente pela invasora, dividido pelo parâmetro $\gamma$. -->
+__Figura 1__ Cenários simulados de competição interespecífica.  Eixo x: diferença no parâmetro C da espécie residente pela invasora, dividido pelo parâmetro $\gamma$.
 
 
 
@@ -188,14 +189,16 @@ readr::write_csv(df_dinamica,file = path_csv)
 ### anaĺise dos dados
 
 As simulações do modelo estocástico param quando uma das duas espécies é extinta. Para cada combinação de parâmetro (id) foram feitas 100 réplicas onde foi contabilizado o número delas em que a espécie invasora não é excluída. Para cada réplica, calculei a distância cartesiana da abundância das duas espécies no final da simulação com a abundância esperada segundo a aproximação de campo médio no tempo final da simulação. 
-Usei um GLM binomial para descrever a probabilidade da espécie invasora excluir a espécie residente em função do tamanho populacional inicial da espécie invasora e da assimetria competitiva. Defini assimetria competitiva como a diferença no coeficiente de competição interespecífica da espécie residente ($C_n$) e o coeficiente de competição interespecífica da espécie invasora ($C_m$ ). Para cada réplica, agrupei os dados por id e usei um LMM gaussiano para descrever a distância do observado nas simulações estocásticas com o esperado pela aproximação de campo médio em função das mesmas preditoras do GLM binomial.
+Usei um GLM binomial para descrever a probabilidade da espécie invasora excluir a espécie residente em função do tamanho populacional inicial da espécie invasora e da assimetria competitiva. Defini assimetria competitiva como a diferença no coeficiente de competição interespecífica da espécie residente ($C_n$) e o coeficiente de competição interespecífica da espécie invasora ($C_m$ ). Para cada réplica, agrupei os dados por id e usei um LMM gaussiano para descrever a distância euclidiana do observado nas simulações estocásticas com o esperado pela aproximação de campo médio em função das mesmas preditoras do GLM binomial.
 
+# Resultados
 
+## Probabilidade de substituição da residente pela invasora  
+  
 ```{r graf exp prob replace the resident, echo=FALSE,include=TRUE,eval=TRUE}
-library(tidyverse)
 df_resultados <- readr::read_csv("resultados/df_resultados.csv")
 df_resultados |> 
-  mutate(Prob_invasion = c_invasion/50,
+  mutate(Prob_invasion = c_invasion/100,
          propM0 = M0/50) |> 
   ggplot(aes(x=propM0,y=C_nm,fill=Prob_invasion)) +
   geom_tile() +
@@ -207,6 +210,44 @@ df_resultados |>
   ggtitle("Prob(replace the resident specie)") +
   theme_classic()
 ```
+  
+  
+__Figura 2__ Gráfico Exploratório da Probabilidade da espécie invasora substituir a espécie residente em função da assimetria competitiva (eixo y) e tamanho populacional inicial da espécie invasora (eixo x).  
+
+## Distância Euclidiana da abundância simulada no tempo final e a predita pelo campo médio
+
+```{r distancia simulada e predito pelo campo medio, eval=TRUE,echo=FALSE}
+df_replicas <- read_csv("resultados/df_rep_tFinal.csv")
+l_p <- list()
+l_p[[1]] <- df_replicas %>% 
+  ggplot(aes(x=C_nm,y=dist_StoDet,group=id)) +
+  geom_jitter() +
+  geom_boxplot() +
+  scale_y_continuous(trans='log10') +
+  labs(title = "escala padrão",y="",x="C_n - C_m (%)")
+l_p[[2]] <- df_replicas %>% 
+  ggplot(aes(x=C_nm,y=dist_StoDet,group=id)) +
+  geom_jitter() +
+  geom_boxplot() +
+  scale_y_continuous(trans='log10') +
+  labs(title = "escala log 10",y="",x="C_n - C_m (%)")
+l_p[[3]] <- df_replicas %>% 
+  ggplot(aes(x=M0,y=dist_StoDet,group=id)) +
+  geom_jitter() +
+  geom_boxplot() +
+  labs(title = "",y="",x="M0")
+l_p[[4]] <- df_replicas %>% 
+  ggplot(aes(x=M0,y=dist_StoDet,group=id)) +
+  geom_jitter() +
+  geom_boxplot() +
+  scale_y_continuous(trans='log10') +
+  labs(title = "",y="",x="M0")
+gridExtra::grid.arrange(grobs=l_p,ncol=2,top="distância do simulado e predito pelo campo médio")
+```
+
+
+__Figura 3__ Gráfico Exploratório da 'Distância euclidiana da abundância no tempo final da simulação e o predito pela aproximação de campo médio no mesmo tempo. A simulação utiliza os parâmetros demográficos escalonados para dt = dia; para integrar a aproximação de campo médio foram usados parâmetros demográficos escalonados para dt = 1 ano. A aproximação de campo médio foi integrada até pelo menos o tempo máximo simulado usando a função 'ode' do pacote deSolve com o método de Euler e intervalo de tempo de 0.02, então foi aplicado a aproximação linear para obter as abundâncias correspondente dos específicos momentos que ocorreram os eventos de exclusão competitiva nas simulações. 
+
 
   
 
@@ -258,21 +299,21 @@ f_2sppDLV <- function(X,max_t,int_t,path_csv){
 ```
 
 
-```{r simulacao do modelo deterministico,echo=FALSE,eval=FALSE}
+```{r simulacao do modelo deterministico,echo=TRUE,eval=FALSE}
 # resultados dos modelos estocasticos
 df_resultados <- read_csv(file = "resultados/df_resultados.csv") |> 
   mutate(t_max_anos = t_max/365.25)
 # df_resultados$t_max_anos |> summary()
 # df par simulações
-df_sim2 <- inner_join(df_sim,
+df_sim2 <- inner_join(df_sim0,
                       select(df_resultados,id,t_max_anos),
                       by="id") |> 
-  mutate(path=paste0("csv/id_",id,"_MFieldApp.csv"))
+  mutate(path=paste0("csv/md_CampoMedio/id_",id,".csv"))
 # simulação
 # X <- df_sim2[1,]
-registerDoMC(3)
 intervalo_EulerMethod <- 0.02
-plyr::a_ply(df_sim2[5:6,],1,
+registerDoMC(3)
+plyr::a_ply(df_sim2,1,
             function(df) f_2sppDLV(X=df, 
                                    max_t = (df$t_max_anos+10*intervalo_EulerMethod),
                                    int_t = intervalo_EulerMethod,path_csv = df$path),
@@ -284,15 +325,16 @@ plyr::a_ply(df_sim2[5:6,],1,
 
 ### Contagem de eventos de substituição
 
-```{r análises preparatórias 1 - df_resultados e df_replicas, eval=FALSE, echo=FALSE, include=FALSE}
+```{r análises preparatórias 1 - df_resultados e df_replicas, eval=FALSE, echo=TRUE, include=FALSE}
 f_resultados <- function(X){
   read_csv(X$path) |>
     group_by(.n) |>
     slice_tail(n=1) |> 
     mutate(invasion=ifelse(m!=0,1,0))
 }
-registerDoMC(2)
-df_rep.tFinal <- adply(df_sim,1,f_resultados,.parallel = TRUE)
+
+registerDoMC(3)
+df_rep.tFinal <- adply(df_sim0,1,f_resultados,.parallel = TRUE)
 df_resultados <- df_rep.tFinal |> 
   group_by(id) |>
   summarise(c_invasion = sum(invasion),
@@ -303,8 +345,8 @@ df_resultados <- df_rep.tFinal |>
             n_var = var(n),
             m_mean = mean(m),
             m_var = var(m)) |> 
-  inner_join(distinct(select(df_rep.tFinal,id:C_n)),by="id") |> 
-  mutate(C_nm = (C_n - C_m)/df_sim$gamma[1]) |> 
+  inner_join(distinct(select(df_rep.tFinal,id:M0)),by="id") |> 
+  mutate(C_nm = (C_n - C_m)/df_sim0$gamma[1]) |> 
   arrange(C_nm)
 #
 write_csv(df_rep.tFinal,file = "resultados/df_rep_tFinal.csv")
@@ -314,7 +356,7 @@ write_csv(df_resultados,file = "resultados/df_resultados.csv")
     
 ### Distância cartesiana entre abundância simulada e esperada pela aproximação de campo médio
 
-```{r versao piloto, echo=TRUE,eval=FALSE}
+```{r distancia euclidiana entre abundancia simulada e aproximacao de campo medio, echo=TRUE,eval=FALSE}
 # dados
 df_replicas <- read_csv("resultados/df_rep_tFinal.csv") %>% 
   mutate(t_anos = t/365.25)
@@ -323,7 +365,7 @@ f_dist <- function(df){
   # dados de entrada (modelo estocastico)
   df <- as.data.frame(df)
   # dados modelo deterministico
-  df_det <- read_csv(file = gsub(".csv","_MFieldApp.csv",df$path[1])) %>% 
+  df_det <- read_csv(file = gsub("md_Estocastico","md_CampoMedio",df$path[1])) %>% 
     as.data.frame
   # linear approximation for the exact time
   df <- cbind(df,
@@ -331,13 +373,12 @@ f_dist <- function(df){
                     function(Y) approx(x=df_det$time,y=Y,xout = df$t_anos)$y)
               )
   # euclidean distance between two points
-  data.frame(sqrt((df$n-df$N)^2+(df$m-df$M)^2))
+  data.frame(.n=df$.n,
+             dist_StoDet=sqrt((df$n-df$N)^2+(df$m-df$M)^2))
 }
 # apply the function by id
-registerDoMC(2)
-df_dist <- ddply(df_replicas,"id",f_dist,.parallel = TRUE) %>% 
-  pivot_longer(!id,names_to = ".n", values_to = "dist_StoDet") %>% 
-  mutate(.n=as.integer(gsub("V","",.n)))
+registerDoMC(3)
+df_dist <- ddply(df_replicas,"id",f_dist,.parallel = TRUE)
 # merge df_replicas with df_dist by id e .n
 df_replicas <- inner_join(df_replicas,
                           df_dist,
@@ -356,9 +397,13 @@ write_csv(df_replicas,
 ## Modelos estatísticos
 
 ### GLM Binomial
+  
+__tabela seleção de GLMs Binomiais para descrever a probabilidade de substituição 
 
-```{r modelo estatístico para descrever a probabilidade de invasao,echo=FALSE,include=FALSE,eval=FALSE}
-# pacote adicional
+
+```{r modelo estatístico para descrever a probabilidade de invasao,echo=FALSE,include=FALSE,eval=TRUE}
+library(plyr)
+library(tidyverse)
 # dados para o modelo estatístico
 df_resultados <- read_csv("resultados/df_resultados.csv")
 f_z <- function(x){
@@ -370,57 +415,36 @@ f_z <- function(x){
 df_resultados$M0.z <- f_z(df_resultados$M0)
 df_resultados$C_nm.z <- f_z(df_resultados$C_nm)
 # glm binomial
+l_md <- list()
+l_md[[1]] <- glm(cbind(c_invasion,100-c_invasion) ~ (C_nm.z + I(C_nm.z^2))*(M0.z + I(M0.z^2)),
+                 family = "binomial",data=df_resultados)
+l_md[[2]] <- glm(cbind(c_invasion,100-c_invasion) ~ (C_nm.z + I(C_nm.z^2))+(M0.z + I(M0.z^2)),
+                 family = "binomial",data=df_resultados)
+l_md[[3]] <- glm(cbind(c_invasion,100-c_invasion) ~ (C_nm.z + I(C_nm.z^2)),
+                 family = "binomial",data=df_resultados)
+l_md[[4]] <- glm(cbind(c_invasion,100-c_invasion) ~ (M0.z + I(M0.z^2)),
+                 family = "binomial",data=df_resultados)
+l_md[[5]] <- glm(cbind(c_invasion,100-c_invasion) ~ 1,
+                 family = "binomial",data=df_resultados)
+names(l_md) <- c("C_nm^2 * M0^2","C_nm^2 + M0^2","C_nm^2","M0^2","1")
+AICctab(l_md,weights=TRUE)
 ```
-
-### LMMM
-
-
-## EXTRAS: juntar dados de simulação
-
-```{r uniao das tabela construidas separadamente}
-# dados
-df_sim <- data.frame(k = 50, beta = 0.7/365.25, delta = 0.69/365.25) |> 
-  mutate(gamma = 2* (beta - delta) / k)
-df_sim <- cbind(df_sim,
-                expand.grid(M0 = floor(df_sim$k * c(0.05,seq(0.2,1,by=0.2))), # 
-                            C_n = df_sim$gamma * seq(1,2,length.out=6))) |> 
-  mutate(C_m = gamma)
-df_sim <- rbind(filter(df_sim,C_n!=df_sim$gamma[1]),
-                mutate(df_sim,
-                       C_m=C_n,C_n=gamma)) |> 
-  mutate(id = 1:n())
-#
-df_sim3 <- data.frame(k = 50, beta = 0.7/365.25, delta = 0.69/365.25) |> 
-  mutate(gamma = 2* (beta - delta) / k)
-df_sim3 <- cbind(df_sim3,
-                 expand.grid(M0 = floor(df_sim3$k[1] * seq(0.1,0.9,by=0.2)), # 
-                            C_n = df_sim3$gamma[1] * seq(1,2,length.out=6))) |> 
-  mutate(C_m = gamma)
-df_sim3 <- rbind(filter(df_sim3,C_n!=df_sim3$gamma[1]),
-                mutate(df_sim3,
-                       C_m=C_n,C_n=gamma)) %>% 
-  mutate(id = (nrow(df_sim)+1):(n()+nrow(df_sim)))
-#
-df_aud <- rbind(df_sim,df_sim3) %>% 
-  mutate(C_nm = (C_n - C_m)/gamma) %>% 
-  arrange(M0,C_nm) %>% 
-  mutate(id2 = 1:n())
-df_aud %>% head(.,n=12)
-# 
-f_nomes_csv <- function(df){
-  df_renome <- read_csv(paste0("csv/id_",df$id,".csv"))
-  write_csv(df_renome, file = paste0("csv_final/id_",df$id2,".csv"))
-}
-registerDoMC(2)
-plyr::a_ply(df_aud,1,f_nomes_csv,.parallel = TRUE)
-#
-f_aud <- function(df){
-  df_id1 <- read_csv(paste0("csv/id_",df$id,".csv"))
-  df_id2 <- read_csv(paste0("csv_final/id_",df$id2,".csv"))
-  unique(df_id1==df_id2)
-}
-unique(adply(df_aud,1,f_aud))
-#
-write_csv(df_aud,file = "resultados/df_auditoria.csv")
+ 
+ 
+ 
+```{r graficos diagnostico do GLM binomial mais plausível,include=TRUE}
+res.Dharma <- DHARMa::simulateResiduals(l_md[["C_nm^2 * M0^2"]],n = 250,refit = FALSE)
+plot(res.Dharma)
+# testQuantiles(res.Dharma)
+# plot(l_md[["C_nm^2 * M0^2"]])
+summary(l_md[["C_nm^2 * M0^2"]])
 ```
+  
+    
+__Figura Resíduos Quantílicos GLM Bionomial da Probabilidade da espécie invasora substituir a residente__ Resíduos quantílícos obtidos com a função simulateResiduals do pacote DHARMa, com 250 simulações. 
+  
+
+
+
+
 
