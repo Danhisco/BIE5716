@@ -20,7 +20,7 @@ library(MuMIn)
 library(AICcmodavg)
 library(boot)
 library(DHARMa)
-library(ciTools)
+library(gridExtra)
 library(deSolve)
 library(doMC)
 library(plyr)
@@ -484,53 +484,55 @@ save(df_AICcmodavg, file="resultados/df_AICcmodavg.csv")
 ```
   
     
-__Figura 2.2.4__ Observado e predito pelo modelo médio
+__Observado e predito pelo modelo médio__
 
-```{r fig 224 nRefEE observado e predito modelo medio, comment=FALSE, message=FALSE,warning=FALSE,results="hide",fig.width=8, fig.height=30}
-# Modelo Global
-load(file="/home/danilo/Documentos/artigo_mestrado/1A.P_MOVER/piloto_MNEE_4x4km/resultados/mdAvg_nRefEE__MuMIn.Rdata")
+```{r glm binomial observado e predito modelo medio, comment=FALSE, message=FALSE,warning=FALSE,results="hide",fig.width=8, fig.height=30}
 # Predição
-df_md <- df_resultados %>% filter(MN=="EE")
-df_md$Pr_nRef <- predict(mdAvg_nRefEE__MuMIn,type="response")*100
+df_md <- df_resultados
+# interval = 'confidence' ainda não é usado, apenas para uma avaliação visual
+df_md$Pr_invasion <- predict(mdAvg_MuMIn,type="response")*100
 # Gráfico
-df_md %<>% mutate(title = paste0(SiteCode," p=",round(p,3))) %>% arrange(p)
-df_md$title <- factor(df_md$title,levels = unique(df_md$title))
-ggplot(df_md,aes(x=d,y=n_nRef)) +
-  geom_point() + geom_line(aes(y=Pr_nRef),color="red") +
-  labs(x="Dispersão Média",
-       y="Número de SADs não Refutadas",
-       title="Prob. SAD predita ser congruente, MNEE") +
-  facet_wrap(~title,ncol=5)
+colors <- c("loess" = "blue", "1 : 1" = "black")
+ggplot(df_md,aes(x=c_invasion,y=Pr_invasion)) +
+  geom_smooth(aes(color="loess"),method = "loess",formula = "y~0+x") +
+  geom_abline(aes(color="1 : 1"),slope=1,intercept = 0) +
+  geom_point() + 
+  labs(x="número de substituições",
+       y="predito pelo modelo médio",
+       title="Predito X Observado",
+       color = "") +
+  scale_color_manual(values = colors)
 ```
   
   
-__Figura 2.2.5__ Predito pelo modelo médio para novo conjunto de dados
+__Predito pelo modelo médio para novo conjunto de dados__
 
 ```{r figura 225 predito modelo medio novo conjunto de dados}
 # dados
-load(file="/home/danilo/Documentos/artigo_mestrado/1A.P_MOVER/piloto_MNEE_4x4km/resultados/mdAvg_nRefEE__AICcmodavg.Rdata")
-df_plot <- mdAvg_nRefEE__AICcmodavg
-df_plot %<>% 
-  mutate(p = p.z * sd(df_resultados$p) + mean(df_resultados$p),
-         d = d.z*sd(df_resultados$d) + mean(df_resultados$d))
+load(file="resultados/df_AICcmodavg.csv")
+df_plot <- df_AICcmodavg %>% 
+  mutate(M0 = M0.z * sd(df_resultados$M0) + mean(df_resultados$M0),
+         C_nm = C_nm.z*sd(df_resultados$C_nm) + mean(df_resultados$C_nm))
 # graficos
-l_p.nRefEE_AICcmodavg <- list()
-l_p.nRefEE_AICcmodavg[[1]] <- ggplot(df_plot,aes(x=p,y=d,fill=mod.avg.pred)) +
+max_fill <- max(c(df_plot$mod.avg.pred,df_resultados$c_invasion/100,
+                  df_plot$lower.CL,df_plot$upper.CL)) + 0.04
+l_p <- list()
+l_p[[1]] <- ggplot(df_plot,aes(x=M0,y=C_nm,fill=mod.avg.pred)) +
   geom_tile() +
-  scale_fill_gradient2(limits = c(0,1),midpoint=0.5, low="red", high="blue",mid="green") +
-  labs(title="Prob de não Refutar",
+  scale_fill_gradient2(limits = c(0,max_fill),midpoint=max_fill/2, low="red", high="blue",mid="green") +
+  labs(title="Prob. replacement",
        fill="Probability") + theme_classic()
-l_p.nRefEE_AICcmodavg[[2]] <- ggplot(df_plot,aes(x=p,y=d,fill=lower.CL)) +
+l_p[[2]] <- ggplot(df_plot,aes(x=M0,y=C_nm,fill=lower.CL)) +
   geom_tile() +
-  scale_fill_gradient2(limits = c(0,1),midpoint=0.5, low="red", high="blue",mid="green") +
+  scale_fill_gradient2(limits = c(0,max_fill),midpoint=max_fill/2, low="red", high="blue",mid="green") +
   labs(title="Lower IC (5%)",
        fill="Probability") + theme_classic()
-l_p.nRefEE_AICcmodavg[[3]] <- ggplot(df_plot,aes(x=p,y=d,fill=upper.CL)) +
+l_p[[3]] <- ggplot(df_plot,aes(x=M0,y=C_nm,fill=upper.CL)) +
   geom_tile() +
   scale_fill_gradient2(limits = c(0,1),midpoint=0.5, low="red", high="blue",mid="green") +
   labs(title="Upper IC (95%)",
        fill="Probability") + theme_classic()
-grid.arrange(l_p.nRefEE_AICcmodavg[[1]],l_p.nRefEE_AICcmodavg[[2]],l_p.nRefEE_AICcmodavg[[3]],
+grid.arrange(grobs=l_p,
              layout_matrix=rbind(rep(1,4),
                                  rep(1,4),
                                  rep(1,4),
