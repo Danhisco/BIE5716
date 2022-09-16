@@ -16,6 +16,8 @@ library(trackdown)
 library(knitr)
 library(kableExtra)
 library(bbmle)
+library(MuMIn)
+library(AICcmodavg)
 library(boot)
 library(DHARMa)
 library(ciTools)
@@ -441,10 +443,129 @@ summary(l_md[["C_nm^2 * M0^2"]])
 ```
   
     
-__Figura Resíduos Quantílicos GLM Bionomial da Probabilidade da espécie invasora substituir a residente__ Resíduos quantílícos obtidos com a função simulateResiduals do pacote DHARMa, com 250 simulações. 
+__Figura Resíduos Quantílicos GLM Bionomial da Probabilidade da espécie invasora substituir a residente__ Resíduos quantílícos obtidos com a função simulateResiduals do pacote DHARMa, com 250 simulações.
+
   
+    
+O modelo cheio não apresenta ainda uma boa congruência com os dados. Irei seguir uma abordagem baseada em model averaging para construir a predição.
+  
+    
+
+  
+### Construção do Modelo médio
+  
+    
+```{r construcao do modelo medio ,eval=FALSE,echo=FALSE}
+# dados
+df_resultados <- read_csv("resultados/df_resultados.csv")
+f_z <- function(x){
+  m <- base::mean(x,na.rm=FALSE)
+  sd <- sd(x,na.rm=FALSE)
+  output <- (x-m)/sd
+  return(output)
+} 
+df_resultados$M0.z <- f_z(df_resultados$M0)
+df_resultados$C_nm.z <- f_z(df_resultados$C_nm)
+# modelo referência
+md_ref <- glm(cbind(c_invasion,100-c_invasion) ~ (C_nm.z + I(C_nm.z^2))*(M0.z + I(M0.z^2)),
+              family = "binomial",data=df_resultados,na.action = "na.fail")
+# todas as combinações do modelo cheio
+registerDoMC(3)
+l_dredge_nInvasions <- llply(dredge(md_ref,trace = FALSE,evaluate=FALSE), eval,.parallel = TRUE)
+# Model Averaging for the simulated data
+mdAvg_MuMIn <- model.avg(l_dredge_nInvasions)
+# Model Averaging for new data predictions
+df_pred <- expand.grid(M0.z=seq(min(df_resultados$M0.z),max(df_resultados$M0.z),length=60),
+                       C_nm.z=seq(min(df_resultados$C_nm.z),max(df_resultados$C_nm.z),length=60))
+# esse demora com esse tanto de pontos
+df_AICcmodavg <- modavgPred(l_dredge_nInvasions,newdata = df_pred) %>%
+  cbind(df_pred)
+save(df_AICcmodavg, file="resultados/df_AICcmodavg.csv")
+```
+  
+    
+__Figura 2.2.4__ Observado e predito pelo modelo médio
+
+```{r fig 224 nRefEE observado e predito modelo medio, comment=FALSE, message=FALSE,warning=FALSE,results="hide",fig.width=8, fig.height=30}
+# Modelo Global
+load(file="/home/danilo/Documentos/artigo_mestrado/1A.P_MOVER/piloto_MNEE_4x4km/resultados/mdAvg_nRefEE__MuMIn.Rdata")
+# Predição
+df_md <- df_resultados %>% filter(MN=="EE")
+df_md$Pr_nRef <- predict(mdAvg_nRefEE__MuMIn,type="response")*100
+# Gráfico
+df_md %<>% mutate(title = paste0(SiteCode," p=",round(p,3))) %>% arrange(p)
+df_md$title <- factor(df_md$title,levels = unique(df_md$title))
+ggplot(df_md,aes(x=d,y=n_nRef)) +
+  geom_point() + geom_line(aes(y=Pr_nRef),color="red") +
+  labs(x="Dispersão Média",
+       y="Número de SADs não Refutadas",
+       title="Prob. SAD predita ser congruente, MNEE") +
+  facet_wrap(~title,ncol=5)
+```
+  
+  
+__Figura 2.2.5__ Predito pelo modelo médio para novo conjunto de dados
+
+```{r figura 225 predito modelo medio novo conjunto de dados}
+# dados
+load(file="/home/danilo/Documentos/artigo_mestrado/1A.P_MOVER/piloto_MNEE_4x4km/resultados/mdAvg_nRefEE__AICcmodavg.Rdata")
+df_plot <- mdAvg_nRefEE__AICcmodavg
+df_plot %<>% 
+  mutate(p = p.z * sd(df_resultados$p) + mean(df_resultados$p),
+         d = d.z*sd(df_resultados$d) + mean(df_resultados$d))
+# graficos
+l_p.nRefEE_AICcmodavg <- list()
+l_p.nRefEE_AICcmodavg[[1]] <- ggplot(df_plot,aes(x=p,y=d,fill=mod.avg.pred)) +
+  geom_tile() +
+  scale_fill_gradient2(limits = c(0,1),midpoint=0.5, low="red", high="blue",mid="green") +
+  labs(title="Prob de não Refutar",
+       fill="Probability") + theme_classic()
+l_p.nRefEE_AICcmodavg[[2]] <- ggplot(df_plot,aes(x=p,y=d,fill=lower.CL)) +
+  geom_tile() +
+  scale_fill_gradient2(limits = c(0,1),midpoint=0.5, low="red", high="blue",mid="green") +
+  labs(title="Lower IC (5%)",
+       fill="Probability") + theme_classic()
+l_p.nRefEE_AICcmodavg[[3]] <- ggplot(df_plot,aes(x=p,y=d,fill=upper.CL)) +
+  geom_tile() +
+  scale_fill_gradient2(limits = c(0,1),midpoint=0.5, low="red", high="blue",mid="green") +
+  labs(title="Upper IC (95%)",
+       fill="Probability") + theme_classic()
+grid.arrange(l_p.nRefEE_AICcmodavg[[1]],l_p.nRefEE_AICcmodavg[[2]],l_p.nRefEE_AICcmodavg[[3]],
+             layout_matrix=rbind(rep(1,4),
+                                 rep(1,4),
+                                 rep(1,4),
+                                 rep(1,4),
+                                 c(2,2,3,3),
+                                 c(2,2,3,3))
+             )
+
+```
 
 
 
+## Tempo para extinção
+
+```{r f 1sppSLV}
+f_1sppSLV <- function(N0,beta_n,delta_n,gamma_n,
+                      replicas,path_csv){
+ df_ab <- data.frame(n=N0,t=0)
+ v_t <- c(1,-1) # 2 transitions
+ f_loop <- function(){
+   while(df_ab[nrow(df_ab),"n"]!=0){
+   v_rates <- c( 
+     n_p = df_ab[nrow(df_ab),"n"] * beta_n,     # +1
+     n_m = df_ab[nrow(df_ab),"n"] * (delta_n +  # -1
+                                       (df_ab[nrow(df_ab),"n"]-1) * gamma_n/2))
+   v_Srates <- sum(v_rates)
+   # update
+   df_ab[nrow(df_ab)+1,] <- c(df_ab[nrow(df_ab),"n"] + v_t[sample(1:2,size = 1,prob=v_rates/v_Srates),],
+                              df_ab[nrow(df_ab),"t"] - log(runif(1))/v_Srates)
+   }
+   return(df_ab)
+}
+df_dinamica <- plyr::rdply(.n = replicas,f_loop())
+readr::write_csv(df_dinamica,file = path_csv)
+}
+```
 
 
