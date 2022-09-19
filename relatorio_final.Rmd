@@ -547,27 +547,51 @@ grid.arrange(grobs=l_p,
 
 ## Tempo para extinção
 
-```{r f 1sppSLV}
-f_1sppSLV <- function(N0,beta_n,delta_n,gamma_n,
-                      replicas,path_csv){
+```{r f 1sppSLV, echo=TRUE,eval=FALSE}
+f_1sppSLV <- function(N0,
+                      beta=df_replicas$beta[1],
+                      delta=df_replicas$delta[1],
+                      gamma=df_replicas$gamma[1],
+                      path_csv){
  df_ab <- data.frame(n=N0,t=0)
  v_t <- c(1,-1) # 2 transitions
- f_loop <- function(){
-   while(df_ab[nrow(df_ab),"n"]!=0){
-   v_rates <- c( 
-     n_p = df_ab[nrow(df_ab),"n"] * beta_n,     # +1
-     n_m = df_ab[nrow(df_ab),"n"] * (delta_n +  # -1
-                                       (df_ab[nrow(df_ab),"n"]-1) * gamma_n/2))
+ while(df_ab[nrow(df_ab),"n"]!=0){
+   v_rates <- c(
+     n_p = df_ab[nrow(df_ab),"n"] * beta,
+     n_m = df_ab[nrow(df_ab),"n"] * (delta + (df_ab[nrow(df_ab),"n"]-1) * gamma/2)
+     )
    v_Srates <- sum(v_rates)
    # update
-   df_ab[nrow(df_ab)+1,] <- c(df_ab[nrow(df_ab),"n"] + v_t[sample(1:2,size = 1,prob=v_rates/v_Srates),],
+   df_ab[nrow(df_ab)+1,] <- c(df_ab[nrow(df_ab),"n"] + v_t[sample(1:2,size = 1,prob=v_rates/v_Srates)],
                               df_ab[nrow(df_ab),"t"] - log(runif(1))/v_Srates)
    }
-   return(df_ab)
-}
-df_dinamica <- plyr::rdply(.n = replicas,f_loop())
-readr::write_csv(df_dinamica,file = path_csv)
+   readr::write_csv(df_ab,file = path_csv)
 }
 ```
+
+
+
+### Como a presença da espécie residente reduz o tempo de extinção da invasora?  
+  
+  
+```{r preparacao simulacao tempo de extincao das invasoras,eval=FALSE,echo=FALSE}
+df_replicas <- read_csv("resultados/df_rep_tFinal.csv")
+df_invasoras <- df_replicas |> 
+  select(id,.n,m,t,invasion)
+df_sim_invasora <- df_invasoras |> 
+  filter(invasion == 1) |> 
+  mutate(path_ = paste0("csv/md_Estocastico/single_specie/id",id,"_rep",.n,".csv"))
+# testes:
+beta = df_replicas$beta[1]
+delta = df_replicas$delta[1]
+gamma = df_replicas$gamma[1]
+N0 = df_sim$m[1]
+path_csv = df_sim$path_[1]
+# simulação geral
+a_ply(df_sim[1:2,],1,function(df) f_1sppSLV(N0 = df$m,path_csv = df$path_))
+```
+
+
+
 
 
