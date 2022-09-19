@@ -32,10 +32,11 @@ library(tidyverse)
 ```{r google docs management, eval=FALSE,include=FALSE}
 # library(trackdown)
 # both overwrite: 
-# to update:
+# override the current google drive file with the current Rmd:
 update_file(file ="relatorio_final.Rmd",
             gpath = "mestrado/disciplinas/BIE5716/",
             hide_code = TRUE)
+# override the current Rmd with the current google drive 
 download_file(file ="relatorio_final.Rmd",
               gpath = "mestrado/disciplinas/BIE5716/")
 ```
