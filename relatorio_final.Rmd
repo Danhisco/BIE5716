@@ -267,7 +267,7 @@ end_time <- Sys.time()
 end_time - start_time
 ```
 
-## Códigos para rodar as simulações estocasticas e deterministicas
+<!-- ## Códigos para rodar as simulações estocasticas e deterministicas -->
 
 ```{r simulação do modelo estocastico, eval=FALSE,echo=FALSE,include=TRUE}
 registerDoMC(3)
@@ -322,11 +322,16 @@ plyr::a_ply(df_sim2,1,
                                    int_t = intervalo_EulerMethod,path_csv = df$path),
             .parallel = TRUE)
 ```
-
-## Cálculo das métricas de avaliação
-
-### Contagem de eventos de substituição
-
+  
+    
+## Cálculo das métricas de avaliação  
+  
+    
+  
+### Contagem de eventos de substituição  
+  
+    
+      
 ```{r análises preparatórias 1 - df_resultados e df_replicas, eval=FALSE, echo=TRUE, include=FALSE}
 f_resultados <- function(X){
   read_csv(X$path) |>
@@ -355,8 +360,75 @@ write_csv(df_rep.tFinal,file = "resultados/df_rep_tFinal.csv")
 write_csv(df_resultados,file = "resultados/df_resultados.csv")
 ```
   
-    
 
+### Tempo para Extinção
+  
+```{r f 1sppSLV, echo=TRUE,eval=FALSE}
+f_1sppSLV <- function(N0,
+                      beta=df_replicas$beta[1],
+                      delta=df_replicas$delta[1],
+                      gamma=df_replicas$gamma[1],
+                      path_csv){
+ df_ab <- data.frame(n=N0,t=0)
+ v_t <- c(1,-1) # 2 transitions
+ while(df_ab[nrow(df_ab),"n"]!=0){
+   v_rates <- c(
+     n_p = df_ab[nrow(df_ab),"n"] * beta,
+     n_m = df_ab[nrow(df_ab),"n"] * (delta + (df_ab[nrow(df_ab),"n"]-1) * gamma/2)
+     )
+   v_Srates <- sum(v_rates)
+   # update
+   df_ab[nrow(df_ab)+1,] <- c(df_ab[nrow(df_ab),"n"] + v_t[sample(1:2,size = 1,prob=v_rates/v_Srates)],
+                              df_ab[nrow(df_ab),"t"] - log(runif(1))/v_Srates)
+   }
+   readr::write_csv(df_ab,file = path_csv)
+}
+```
+    
+```{r simulacao tempo de extincao das invasoras,eval=FALSE,echo=TRUE}
+df_replicas <- read_csv("resultados/df_rep_tFinal.csv")
+df_invasoras <- df_replicas |> 
+  select(id,.n,m,t,invasion)
+df_sim <- df_invasoras |> 
+  filter(invasion == 1) |> 
+  mutate(path_ = paste0("csv/md_Estocastico/single_specie/id",id,"_rep",.n,".csv"))
+# testes:
+beta = df_replicas$beta[1]
+delta = df_replicas$delta[1]
+gamma = df_replicas$gamma[1]
+N0 = df_sim$m[1]
+path_csv = df_sim$path_[1]
+# simulação geral
+a_ply(df_sim[1:2,],1,function(df) f_1sppSLV(N0 = df$m,path_csv = df$path_))
+```
+```{r análise dos dados da pasta single_species}
+# df <- df_sim[1,]
+f_resultados <- function(df){
+  df_ab <- read_csv(df$path_) |> as.data.frame()
+  df$t_single <- df_ab[nrow(df_ab),"t"]
+  df <- mutate(df,t_total = t + t_single)
+}
+registerDoMC(3)
+df_1sp <- adply(df_sim,1,f_resultados,.parallel = TRUE)
+# df dos resultados específicos
+## df_TEI2spp.csv
+df_1 <- df_1sp |> select(id,.n,invasion,t_total) |> 
+  rename(TE_m = t_total)
+df_2 <- df_invasoras |> filter(invasion==0) |> select(-m) |> rename(TE_m = t)
+df_1 <- rbind(df_1,df_2)
+df_2 <- df_replicas |> select(id,.n,M0,C_nm)
+df_TEI2spp <- inner_join(df_1,
+                         df_2,
+                         by = c("id",".n")) |> 
+  arrange(id,.n)
+write_csv(df_TEI2spp,file="resultados/df_TEI2spp.csv")
+## df_TE1sp.csv
+df_TE1sp <- df_1sp |> select(id,.n,m,t_single) |> rename(M0 = m, TE = t_single) |> arrange(id,.n)
+write_csv(df_TE1sp,file="resultados/df_TE1sp.csv")
+```
+
+  
+  
 ## Modelos estatísticos
 
 ### GLM Binomial
@@ -364,8 +436,6 @@ write_csv(df_resultados,file = "resultados/df_resultados.csv")
 O modelo cheio mais plausível é aquele que considera a interação entre os polinômios (Tabela 1). Porêm este modelo não apresenta um excelente ajuste aos dados (Figura 1 e sumário do módelo 1). O predito e observado diferem em valores extremos: quando . 
 
 
-
-  
 __tabela seleção de GLMs Binomiais para descrever a probabilidade de substituição 
 
 ```{r modelo estatístico para descrever a probabilidade de invasao,echo=FALSE,include=FALSE,eval=TRUE}
@@ -511,49 +581,3 @@ grid.arrange(grobs=l_p,
 ```
 
 
-
-## Tempo para extinção
-
-```{r f 1sppSLV, echo=TRUE,eval=FALSE}
-f_1sppSLV <- function(N0,
-                      beta=df_replicas$beta[1],
-                      delta=df_replicas$delta[1],
-                      gamma=df_replicas$gamma[1],
-                      path_csv){
- df_ab <- data.frame(n=N0,t=0)
- v_t <- c(1,-1) # 2 transitions
- while(df_ab[nrow(df_ab),"n"]!=0){
-   v_rates <- c(
-     n_p = df_ab[nrow(df_ab),"n"] * beta,
-     n_m = df_ab[nrow(df_ab),"n"] * (delta + (df_ab[nrow(df_ab),"n"]-1) * gamma/2)
-     )
-   v_Srates <- sum(v_rates)
-   # update
-   df_ab[nrow(df_ab)+1,] <- c(df_ab[nrow(df_ab),"n"] + v_t[sample(1:2,size = 1,prob=v_rates/v_Srates)],
-                              df_ab[nrow(df_ab),"t"] - log(runif(1))/v_Srates)
-   }
-   readr::write_csv(df_ab,file = path_csv)
-}
-```
-
-
-
-### Como a presença da espécie residente reduz o tempo de extinção da invasora?  
-  
-  
-```{r preparacao simulacao tempo de extincao das invasoras,eval=FALSE,echo=FALSE}
-df_replicas <- read_csv("resultados/df_rep_tFinal.csv")
-df_invasoras <- df_replicas |> 
-  select(id,.n,m,t,invasion)
-df_sim_invasora <- df_invasoras |> 
-  filter(invasion == 1) |> 
-  mutate(path_ = paste0("csv/md_Estocastico/single_specie/id",id,"_rep",.n,".csv"))
-# testes:
-beta = df_replicas$beta[1]
-delta = df_replicas$delta[1]
-gamma = df_replicas$gamma[1]
-N0 = df_sim$m[1]
-path_csv = df_sim$path_[1]
-# simulação geral
-a_ply(df_sim[1:2,],1,function(df) f_1sppSLV(N0 = df$m,path_csv = df$path_))
-```
