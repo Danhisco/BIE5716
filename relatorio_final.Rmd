@@ -182,6 +182,7 @@ PLANOS:
   
 ```{r figura 2 Probabilidade de substituicao da residente pela invasora}
 # dados
+df_resultados <- read_csv("resultados/df_resultados.csv")
 load(file="resultados/df_AICcmodavg.csv")
 df_plot <- df_AICcmodavg %>% 
   mutate(M0 = M0.z * sd(df_resultados$M0) + mean(df_resultados$M0),
@@ -392,15 +393,15 @@ df_sim <- df_invasoras |>
   filter(invasion == 1) |> 
   mutate(path_ = paste0("csv/md_Estocastico/single_specie/id",id,"_rep",.n,".csv"))
 # testes:
-beta = df_replicas$beta[1]
-delta = df_replicas$delta[1]
-gamma = df_replicas$gamma[1]
-N0 = df_sim$m[1]
-path_csv = df_sim$path_[1]
+# beta = df_replicas$beta[1]
+# delta = df_replicas$delta[1]
+# gamma = df_replicas$gamma[1]
+# N0 = df_sim$m[1]
+# path_csv = df_sim$path_[1]
 # simulação geral
-a_ply(df_sim[1:2,],1,function(df) f_1sppSLV(N0 = df$m,path_csv = df$path_))
+# a_ply(df_sim[1:2,],1,function(df) f_1sppSLV(N0 = df$m,path_csv = df$path_))
 ```
-```{r análise dos dados da pasta single_species,echo=FALSE}
+```{r análise dos dados da pasta single_species,echo=FALSE,eval=FALSE}
 # df <- df_sim[1,]
 f_resultados <- function(df){
   df_ab <- read_csv(df$path_) |> as.data.frame()
@@ -429,7 +430,7 @@ write_csv(df_TE1sp,file="resultados/df_TE1sp.csv")
   
 ## Modelos estatísticos
 
-### GLM Binomial: probabilidade de substituição da residente pela invasora
+### Probabilidade de substituição da residente pela invasora
 
 ```{r graf exp prob replace the resident, echo=FALSE,include=TRUE,eval=TRUE}
 df_resultados <- readr::read_csv("resultados/df_resultados.csv")
@@ -450,10 +451,10 @@ df_resultados |>
 __Figura A1__ Proporção observada de substituições 
 
 
-O modelo cheio mais plausível é aquele que considera a interação entre os polinômios (Tabela 1). Porêm este modelo não apresenta um excelente ajuste aos dados (Figura SI 1 e sumário do módelo 1). O predito e observado diferem em valores extremos: quando a proporção de substituições é baixa, o predito pode subestimar a probabilidade de substituição (Figura SI 2); quando a proporção é alta, o predito pode superestimar a probabilidade. 
+O modelo cheio mais plausível é aquele que considera a interação entre os polinômios (Tabela 1). Porêm este modelo não apresenta um excelente ajuste aos dados (Figura SI 1 e sumário do módelo 1). O predito e observado diferem em valores extremos: quando a proporção de substituições é baixa, o predito pode subestimar a probabilidade de substituição (Figura SI 2); quando a proporção é alta, o predito pode superestimar a probabilidade. Para as análises utilizei os pacotes DHARMa (REF), MuMIn (REF) e AICcmodavg (REF).
 
 
-__tabela seleção de GLMs Binomiais para descrever a probabilidade de substituição__
+__tabela A1__ seleção de GLMs Binomiais para descrever a probabilidade de substituição
 
 ```{r modelo estatístico para descrever a probabilidade de invasao,echo=FALSE,include=FALSE,eval=TRUE}
 library(plyr)
@@ -485,26 +486,26 @@ AICctab(l_md,weights=TRUE)
 ```
 
 
-
-
  
-```{r graficos diagnostico do GLM binomial mais plausível,include=TRUE}
+```{r graficos diagnostico do GLM binomial mais plausível,include=TRUE,eval=TRUE}
 res.Dharma <- DHARMa::simulateResiduals(l_md[["C_nm^2 * M0^2"]],n = 250,refit = FALSE)
 plot(res.Dharma)
-# testQuantiles(res.Dharma)
-# plot(l_md[["C_nm^2 * M0^2"]])
+```
+    
+__Figura A2__ Resíduos Quantílicos GLM Binomial cheio. Resíduos quantílícos obtidos com a função simulateResiduals do pacote DHARMa, com 250 simulações.  
+  
+
+__tabela A2__ Sumário do modelo 1: GLM Binomial Cheio  
+
+```{r sumário do GLM binomial cheio}
 summary(l_md[["C_nm^2 * M0^2"]])
 ```
-  
-    
-__Figura Resíduos Quantílicos GLM Bionomial da Probabilidade da espécie invasora substituir a residente__ Resíduos quantílícos obtidos com a função simulateResiduals do pacote DHARMa, com 250 simulações.
-
 
     
-### Construção do Modelo médio
+#### Modelo Médio
   
     
-```{r construcao do modelo medio ,eval=FALSE,echo=FALSE}
+```{r construcao do modelo medio ,eval=FALSE,echo=TRUE}
 # dados
 df_resultados <- read_csv("resultados/df_resultados.csv")
 f_z <- function(x){
@@ -533,9 +534,26 @@ save(df_AICcmodavg, file="resultados/df_AICcmodavg.csv")
 ```
   
     
-__Figura Observado e predito pelo modelo médio__
-
 ```{r glm binomial observado e predito modelo medio, comment=FALSE, message=FALSE,warning=FALSE,results="hide"}
+# dados
+df_resultados <- read_csv("resultados/df_resultados.csv")
+f_z <- function(x){
+  m <- base::mean(x,na.rm=FALSE)
+  sd <- sd(x,na.rm=FALSE)
+  output <- (x-m)/sd
+  return(output)
+} 
+df_resultados$M0.z <- f_z(df_resultados$M0)
+df_resultados$C_nm.z <- f_z(df_resultados$C_nm)
+# modelo referência
+md_ref <- glm(cbind(c_invasion,100-c_invasion) ~ (C_nm.z + I(C_nm.z^2))*(M0.z + I(M0.z^2)),
+              family = "binomial",data=df_resultados,na.action = "na.fail")
+## ajustes
+# todas as combinações do modelo cheio
+registerDoMC(3)
+l_dredge_nInvasions <- llply(dredge(md_ref,trace = FALSE,evaluate=FALSE), eval,.parallel = TRUE)
+# Model Averaging for the observed data
+mdAvg_MuMIn <- model.avg(l_dredge_nInvasions)
 # Predição
 df_md <- df_resultados
 # interval = 'confidence' ainda não é usado, apenas para uma avaliação visual
@@ -548,13 +566,18 @@ ggplot(df_md,aes(x=c_invasion,y=Pr_invasion)) +
   geom_point() + 
   labs(x="número de substituições",
        y="predito pelo modelo médio",
-       title="Predito X Observado",
+       title="Predito pelo modelo médio X Observado",
        color = "") +
   scale_color_manual(values = colors)
 ```
   
-  
-__Predito pelo modelo médio para novo conjunto de dados__
 
+### Tempo de Extinção
+
+#### 
+
+```{r analise dos dados de tempo de extincao}
+
+```
 
 
