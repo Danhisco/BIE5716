@@ -143,24 +143,6 @@ readr::write_csv(df_dinamica,file = path_csv)
 Apenas o parâmetro que descreve a probabilidade de exclusão de uma espécie pela outra por colisão (parâmetros $C_n$ e $C_m$, tabela 1) variou entre simulações. Os demais parâmetros populacionais foram iguais: $\beta =$ `r format(0.7/365.25,scientific = TRUE,digits = 4)`, $\delta =$ `r format(0.69/365.25,scientific = TRUE,digits = 4)`, $\gamma =$ `r format(2*(0.7/365.25-0.69/365.25)/50,scientific = TRUE,digits = 4)`. Os parâmetros de competição interespecífica ($C_n$ e $C_m$) variam entre $\gamma$ e $2\gamma$, tal que a assimetria competitiva, definido por $(C_n - C_m)/ \gamma$, variou entre -1 e 1 (figura 1). O tamanho inicial da espécie invasora variou entre 1% e 100% da capacidade de suporte K = 50 indivíduos (Figura 1). Foram simulados 11 cenários de tamanho inicial da invasora e 11 cenários de assimetria competitiva, totalizando 121 cenários, cada um com 100 réplicas. 
 
     
-```{r desenho expercimental invasão, eval=FALSE,echo=FALSE}
-# dados completo
-k=50
-df_sim0 <- data.frame(k = 50, beta = 0.7/365.25, delta = 0.69/365.25) |> 
-  mutate(gamma = 2* (beta - delta) / k)
-df_sim0 <- cbind(df_sim0,
-                 expand.grid(M0 = floor(df_sim0$k * c(0.05,seq(0.1,1,by=0.1))),
-                             C_n = df_sim0$gamma * seq(1,2,length.out=6))) |> 
-  mutate(C_m = gamma)
-df_sim0 <- rbind(filter(df_sim0,C_n!=df_sim0$gamma[1]),
-                 mutate(df_sim0,
-                        C_m=C_n,C_n=gamma)) |> 
-  mutate(C_nm = (C_n - C_m)/gamma) %>% 
-  arrange(M0,C_nm) %>% 
-  mutate(id = 1:n(),
-         path = paste0("csv/md_Estocastico/id_",id,".csv"))
-write_csv(df_sim0,file = "csv/df_sim0.csv")
-```
 ```{r graficos dos cenarios simulados, echo=FALSE,eval=TRUE,cache=TRUE}
 df_sim0 <- read_csv("csv/df_sim0.csv")
 # gráficos
@@ -182,64 +164,62 @@ __Figura 1__ Cenários simulados de competição interespecífica.  Eixo y: assi
 
 ### anaĺise dos dados
 
-Para responder a primeira pergunta, como a probabilidade de substituição da residente varia em função do tamanho inicial da invasora e da assimetria competitiva, é possível usar a abordagem de campo médio e a de simulação de trajetórias individuais. No caso da abordagem de campo médio, exceto pelo cenário de equivalência das espécies (assimetria competitiva nula) que depende totalmente das condições iniciais e do regime de perturbações, dado tempo suficiente haverá certamente a substituição ou a não substituição da espécie residente pela invasora, em função da assimetria competitiva a favor da invasora ou da residente, respectivamente. Nessa abordagem basta plotar as soluções de equilíbrio das equações 3a e 3b em um plano de fase definido pelas abundância de N e M e assim avaliar qual o ponto de equilíbrio estável para definir se haverá ou não evento de substituição. No caso da simulação de trajetórias individuais, considerei a identidade da espécie que permanece após a primeira extinção. Se a espécie que permanece é a invasora então ocorreu um evento de substituição da residente pela invasora. Para descrever a probabilidade de substituição na simulação das trajetórias indivíduais usei um GLM binomial com o tamanho inicial da invasora e a assimetria competitiva como variáveis preditoras. Usei uma abordagem baseada em modelo médio (REF), em que a partir de um modelo cheio é ajustado todos os possíveis submodelos e então a predição de cada modelo é ponderada pelo peso de evidência do submodelo. O GLM binomial cheio considerou a interação do polinômio de segundo grau de cada preditora.
+Para responder a primeira pergunta, como a probabilidade de substituição da residente varia em função do tamanho inicial da invasora e da assimetria competitiva, é possível usar a abordagem de campo médio e a de simulação de trajetórias individuais. No caso da abordagem de campo médio, exceto pelo cenário de equivalência das espécies (assimetria competitiva nula) que depende totalmente das condições iniciais e do regime de perturbações, dado tempo suficiente haverá certamente a substituição ou a não substituição da espécie residente pela invasora, em função da assimetria competitiva a favor da invasora ou da residente, respectivamente. Nessa abordagem basta plotar as soluções de equilíbrio das equações 3a e 3b em um plano de fase definido pelas abundância de N e M para avaliar qual o ponto de equilíbrio estável para definir se haverá ou não evento de substituição. No caso da simulação de trajetórias individuais, considerei a identidade da espécie que permanece após a primeira extinção. Se a espécie que permanece é a invasora então ocorreu um evento de substituição da residente pela invasora. Para descrever a probabilidade de substituição na simulação das trajetórias indivíduais usei um GLM binomial com o tamanho inicial da invasora e a assimetria competitiva como variáveis preditoras. Usei uma abordagem baseada em modelo médio (REF), em que a partir de um modelo cheio é ajustado todos os possíveis submodelos e então a predição de cada modelo é ponderada pelo peso de evidência do submodelo. O GLM binomial cheio considerou a interação do polinômio de segundo grau de cada preditora.
 Para responder a segunda pergunta, como a presença da residente reduz o tempo de extinção da invasora, é necessário descrever o tempo de extinção da invasora nas simulações de trajetórias individuais em duas situações. A primeira situação é obtida pela análise da distribuição de tempos de extinção da invasora na presença da competidora, ou seja, os tempos totais até a espécie invasora se extinguir, seja ela a primeira ou última a se extinguir. Essa primeira situação pode ser descrita por um LMM em que os tempos de extinção de réplicas de uma mesma bateria de simulação (combinação única de tamanho inicial e assimetria competitiva) são agrupadas na estrutura aleatória (REF), e então usei as mesmas preditoras do GLM binomial para construir um modelo cheio. Na segunda situação considerei apenas o tempo parcial de extinção na ausência da residente, ou seja, considerei que o tempo é zerado no momento do evento de substituição. Para descrever a segunda situação é possível usar um LM em que o modelo cheio é composto pelo polinômio de segundo grau do tamanho da espécie invasora no momento do evento de substituição. Em ambas situações usei uma abordagem de modelo médio para construir o predito para os tempos de extinção. Então calculei a diferença no predito pelo modelo médio na segunda situação pela primeira situação.
 
 # Resultados
 
+
 ## Como a probabilidade de substituição varia com o tamanho inicial da invasora e a assimetria competitiva?
+
+PLANOS:  
   
-```{r graf exp prob replace the resident, echo=FALSE,include=TRUE,eval=TRUE}
-df_resultados <- readr::read_csv("resultados/df_resultados.csv")
-df_resultados |> 
-  mutate(Prob_invasion = c_invasion/100,
-         propM0 = M0/50) |> 
-  ggplot(aes(x=propM0,y=C_nm,fill=Prob_invasion)) +
+- gráfico 1 plotar as isolinhas no plano de fase N X M em 3 situações extremas: C_nm = 1,0,-1, paras M0 = k*(0.01,0.25,0.5,0.75,1)  
+  
+- gráfico 2 predito para a Probabilidade de substituição em função de C  
+  
+
+  
+```{r figura 2 Probabilidade de substituicao da residente pela invasora}
+# dados
+load(file="resultados/df_AICcmodavg.csv")
+df_plot <- df_AICcmodavg %>% 
+  mutate(M0 = M0.z * sd(df_resultados$M0) + mean(df_resultados$M0),
+         C_nm = C_nm.z*sd(df_resultados$C_nm) + mean(df_resultados$C_nm))
+# graficos
+max_fill <- max(c(df_plot$mod.avg.pred,df_resultados$c_invasion/100,
+                  df_plot$lower.CL,df_plot$upper.CL)) + 0.04
+l_p <- list()
+l_p[[1]] <- ggplot(df_plot,aes(x=M0,y=C_nm,fill=mod.avg.pred)) +
   geom_tile() +
-  scale_fill_distiller(palette = "Spectral") +
-  labs(fill="",x="M0, initial pop. size of invader (%K)",y="Cn - Cm (%)") +
-  coord_cartesian(expand = FALSE) +
-  # scale_y_continuous(breaks = seq(0,20,by=4)) +
-  # scale_x_continuous(breaks = seq(0.05,0.95,by=0.10)) +
-  ggtitle("Prob(replace the resident specie)") +
-  theme_classic()
+  scale_fill_gradient2(limits = c(0,max_fill),midpoint=max_fill/2, low="red", high="blue",mid="green") +
+  labs(title="Prob. replacement",
+       fill="Probability") + theme_classic()
+l_p[[2]] <- ggplot(df_plot,aes(x=M0,y=C_nm,fill=lower.CL)) +
+  geom_tile() +
+  scale_fill_gradient2(limits = c(0,max_fill),midpoint=max_fill/2, low="red", high="blue",mid="green") +
+  labs(title="Lower IC (5%)",
+       fill="Probability") + theme_classic()
+l_p[[3]] <- ggplot(df_plot,aes(x=M0,y=C_nm,fill=upper.CL)) +
+  geom_tile() +
+  scale_fill_gradient2(limits = c(0,1),midpoint=0.5, low="red", high="blue",mid="green") +
+  labs(title="Upper IC (95%)",
+       fill="Probability") + theme_classic()
+grid.arrange(grobs=l_p,
+             layout_matrix=rbind(rep(1,4),
+                                 rep(1,4),
+                                 rep(1,4),
+                                 rep(1,4),
+                                 c(2,2,3,3),
+                                 c(2,2,3,3))
+             )
+
 ```
   
   
 __Figura 2__ Gráfico Exploratório da Probabilidade da espécie invasora substituir a espécie residente em função da assimetria competitiva (eixo y) e tamanho populacional inicial da espécie invasora (eixo x).  
 
 ## Como a presença da residente reduz o tempo de extinção da invasora?
-
-```{r distancia simulada e predito pelo campo medio, eval=TRUE,echo=FALSE}
-df_replicas <- read_csv("resultados/df_rep_tFinal.csv")
-l_p <- list()
-l_p[[1]] <- df_replicas %>% 
-  ggplot(aes(x=C_nm,y=dist_StoDet,group=id)) +
-  geom_jitter() +
-  geom_boxplot() +
-  scale_y_continuous(trans='log10') +
-  labs(title = "escala padrão",y="",x="C_n - C_m (%)")
-l_p[[2]] <- df_replicas %>% 
-  ggplot(aes(x=C_nm,y=dist_StoDet,group=id)) +
-  geom_jitter() +
-  geom_boxplot() +
-  scale_y_continuous(trans='log10') +
-  labs(title = "escala log 10",y="",x="C_n - C_m (%)")
-l_p[[3]] <- df_replicas %>% 
-  ggplot(aes(x=M0,y=dist_StoDet,group=id)) +
-  geom_jitter() +
-  geom_boxplot() +
-  labs(title = "",y="",x="M0")
-l_p[[4]] <- df_replicas %>% 
-  ggplot(aes(x=M0,y=dist_StoDet,group=id)) +
-  geom_jitter() +
-  geom_boxplot() +
-  scale_y_continuous(trans='log10') +
-  labs(title = "",y="",x="M0")
-gridExtra::grid.arrange(grobs=l_p,ncol=2,top="distância do simulado e predito pelo campo médio")
-```
-
-__Figura 3__ Gráfico Exploratório da 'Distância euclidiana da abundância no tempo final da simulação e o predito pela aproximação de campo médio no mesmo tempo. A simulação utiliza os parâmetros demográficos escalonados para dt = dia; para integrar a aproximação de campo médio foram usados parâmetros demográficos escalonados para dt = 1 ano. A aproximação de campo médio foi integrada até pelo menos o tempo máximo simulado usando a função 'ode' do pacote deSolve com o método de Euler e intervalo de tempo de 0.02, então foi aplicado a aproximação linear para obter as abundâncias correspondente dos específicos momentos que ocorreram os eventos de exclusão competitiva nas simulações. 
 
  # Discussão
 
@@ -258,6 +238,28 @@ Pois, quanto menor o tamanho populacional maior a chance de uma sequência de ev
 
 # Apêndice
 
+<!-- ## Códigos para rodar as simulações estocasticas e deterministicas -->
+
+```{r desenho expercimental invasão, eval=FALSE,echo=FALSE}
+# dados completo
+k=50
+df_sim0 <- data.frame(k = 50, beta = 0.7/365.25, delta = 0.69/365.25) |> 
+  mutate(gamma = 2* (beta - delta) / k)
+df_sim0 <- cbind(df_sim0,
+                 expand.grid(M0 = floor(df_sim0$k * c(0.05,seq(0.1,1,by=0.1))),
+                             C_n = df_sim0$gamma * seq(1,2,length.out=6))) |> 
+  mutate(C_m = gamma)
+df_sim0 <- rbind(filter(df_sim0,C_n!=df_sim0$gamma[1]),
+                 mutate(df_sim0,
+                        C_m=C_n,C_n=gamma)) |> 
+  mutate(C_nm = (C_n - C_m)/gamma) %>% 
+  arrange(M0,C_nm) %>% 
+  mutate(id = 1:n(),
+         path = paste0("csv/md_Estocastico/id_",id,".csv"))
+write_csv(df_sim0,file = "csv/df_sim0.csv")
+```
+
+
 ```{r time estimative, include=FALSE,echo=FALSE,eval=FALSE}
 f_2sppSLV(N0=50, beta_n = 0.7/365.25, delta_n = 0.69/365.25, gamma_n = (0.7/365.25 - 0.69/365.25)/50, C_n =  (0.7/365.25 - 0.69/365.25)/50,
           M0=50, beta_m = 0.7/365.25, delta_m = 0.69/365.25, gamma_m = (0.7/365.25 - 0.69/365.25)/50, C_m =  (0.7/365.25 - 0.69/365.25)/50,replicas = 50)
@@ -267,7 +269,6 @@ end_time <- Sys.time()
 end_time - start_time
 ```
 
-<!-- ## Códigos para rodar as simulações estocasticas e deterministicas -->
 
 ```{r simulação do modelo estocastico, eval=FALSE,echo=FALSE,include=TRUE}
 registerDoMC(3)
@@ -279,9 +280,9 @@ plyr::a_ply(df_sim,1,
             .parallel = TRUE)
 ```
 
-### the mean field approximation
+<!-- ### the mean field approximation -->
 
-```{r modelo deterministico,eval=FALSE,include=FALSE,echo=TRUE}
+```{r modelo deterministico,eval=FALSE,include=FALSE,echo=FALSE}
 f_2sppDLV <- function(X,max_t,int_t,path_csv){
  f_ode<- function(t,y,p){
    N <- y[1]
@@ -324,15 +325,13 @@ plyr::a_ply(df_sim2,1,
 ```
   
     
-## Cálculo das métricas de avaliação  
-  
-    
-  
-### Contagem de eventos de substituição  
-  
+<!-- ## Cálculo das métricas de avaliação   -->
+
+
+<!-- ### Contagem de eventos de substituição  -->
     
       
-```{r análises preparatórias 1 - df_resultados e df_replicas, eval=FALSE, echo=TRUE, include=FALSE}
+```{r análises preparatórias 1 - df_resultados e df_replicas, eval=FALSE, echo=FALSE, include=FALSE}
 f_resultados <- function(X){
   read_csv(X$path) |>
     group_by(.n) |>
@@ -361,9 +360,9 @@ write_csv(df_resultados,file = "resultados/df_resultados.csv")
 ```
   
 
-### Tempo para Extinção
+<!-- ### Tempo para Extinção -->
   
-```{r f 1sppSLV, echo=TRUE,eval=FALSE}
+```{r f 1sppSLV, echo=FALSE,eval=FALSE}
 f_1sppSLV <- function(N0,
                       beta=df_replicas$beta[1],
                       delta=df_replicas$delta[1],
@@ -385,7 +384,7 @@ f_1sppSLV <- function(N0,
 }
 ```
     
-```{r simulacao tempo de extincao das invasoras,eval=FALSE,echo=TRUE}
+```{r simulacao tempo de extincao das invasoras,eval=FALSE,echo=FALSE}
 df_replicas <- read_csv("resultados/df_rep_tFinal.csv")
 df_invasoras <- df_replicas |> 
   select(id,.n,m,t,invasion)
@@ -401,7 +400,7 @@ path_csv = df_sim$path_[1]
 # simulação geral
 a_ply(df_sim[1:2,],1,function(df) f_1sppSLV(N0 = df$m,path_csv = df$path_))
 ```
-```{r análise dos dados da pasta single_species}
+```{r análise dos dados da pasta single_species,echo=FALSE}
 # df <- df_sim[1,]
 f_resultados <- function(df){
   df_ab <- read_csv(df$path_) |> as.data.frame()
@@ -428,15 +427,33 @@ write_csv(df_TE1sp,file="resultados/df_TE1sp.csv")
 ```
 
   
-  
 ## Modelos estatísticos
 
-### GLM Binomial
+### GLM Binomial: probabilidade de substituição da residente pela invasora
 
-O modelo cheio mais plausível é aquele que considera a interação entre os polinômios (Tabela 1). Porêm este modelo não apresenta um excelente ajuste aos dados (Figura 1 e sumário do módelo 1). O predito e observado diferem em valores extremos: quando . 
+```{r graf exp prob replace the resident, echo=FALSE,include=TRUE,eval=TRUE}
+df_resultados <- readr::read_csv("resultados/df_resultados.csv")
+df_resultados |> 
+  mutate(Prob_invasion = c_invasion/100,
+         propM0 = M0/50) |> 
+  ggplot(aes(x=propM0,y=C_nm,fill=Prob_invasion)) +
+  geom_tile() +
+  scale_fill_distiller(palette = "Spectral") +
+  labs(fill="",x="M0, initial pop. size of invader (%K)",y="Cn - Cm / gamma") +
+  coord_cartesian(expand = FALSE) +
+  # scale_y_continuous(breaks = seq(0,20,by=4)) +
+  # scale_x_continuous(breaks = seq(0.05,0.95,by=0.10)) +
+  ggtitle("Prob(replace the resident specie)") +
+  theme_classic()
+```
+
+__Figura A1__ Proporção observada de substituições 
 
 
-__tabela seleção de GLMs Binomiais para descrever a probabilidade de substituição 
+O modelo cheio mais plausível é aquele que considera a interação entre os polinômios (Tabela 1). Porêm este modelo não apresenta um excelente ajuste aos dados (Figura SI 1 e sumário do módelo 1). O predito e observado diferem em valores extremos: quando a proporção de substituições é baixa, o predito pode subestimar a probabilidade de substituição (Figura SI 2); quando a proporção é alta, o predito pode superestimar a probabilidade. 
+
+
+__tabela seleção de GLMs Binomiais para descrever a probabilidade de substituição__
 
 ```{r modelo estatístico para descrever a probabilidade de invasao,echo=FALSE,include=FALSE,eval=TRUE}
 library(plyr)
@@ -482,13 +499,8 @@ summary(l_md[["C_nm^2 * M0^2"]])
     
 __Figura Resíduos Quantílicos GLM Bionomial da Probabilidade da espécie invasora substituir a residente__ Resíduos quantílícos obtidos com a função simulateResiduals do pacote DHARMa, com 250 simulações.
 
-  
-    
-O modelo cheio não apresenta ainda uma boa congruência com os dados. Irei seguir uma abordagem baseada em model averaging para construir a predição.
-  
-    
 
-  
+    
 ### Construção do Modelo médio
   
     
@@ -544,40 +556,5 @@ ggplot(df_md,aes(x=c_invasion,y=Pr_invasion)) +
   
 __Predito pelo modelo médio para novo conjunto de dados__
 
-```{r figura 225 predito modelo medio novo conjunto de dados}
-# dados
-load(file="resultados/df_AICcmodavg.csv")
-df_plot <- df_AICcmodavg %>% 
-  mutate(M0 = M0.z * sd(df_resultados$M0) + mean(df_resultados$M0),
-         C_nm = C_nm.z*sd(df_resultados$C_nm) + mean(df_resultados$C_nm))
-# graficos
-max_fill <- max(c(df_plot$mod.avg.pred,df_resultados$c_invasion/100,
-                  df_plot$lower.CL,df_plot$upper.CL)) + 0.04
-l_p <- list()
-l_p[[1]] <- ggplot(df_plot,aes(x=M0,y=C_nm,fill=mod.avg.pred)) +
-  geom_tile() +
-  scale_fill_gradient2(limits = c(0,max_fill),midpoint=max_fill/2, low="red", high="blue",mid="green") +
-  labs(title="Prob. replacement",
-       fill="Probability") + theme_classic()
-l_p[[2]] <- ggplot(df_plot,aes(x=M0,y=C_nm,fill=lower.CL)) +
-  geom_tile() +
-  scale_fill_gradient2(limits = c(0,max_fill),midpoint=max_fill/2, low="red", high="blue",mid="green") +
-  labs(title="Lower IC (5%)",
-       fill="Probability") + theme_classic()
-l_p[[3]] <- ggplot(df_plot,aes(x=M0,y=C_nm,fill=upper.CL)) +
-  geom_tile() +
-  scale_fill_gradient2(limits = c(0,1),midpoint=0.5, low="red", high="blue",mid="green") +
-  labs(title="Upper IC (95%)",
-       fill="Probability") + theme_classic()
-grid.arrange(grobs=l_p,
-             layout_matrix=rbind(rep(1,4),
-                                 rep(1,4),
-                                 rep(1,4),
-                                 rep(1,4),
-                                 c(2,2,3,3),
-                                 c(2,2,3,3))
-             )
-
-```
 
 
