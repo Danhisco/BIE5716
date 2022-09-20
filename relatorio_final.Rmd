@@ -4,7 +4,7 @@ author: "Danilo Pereira Mori"
 date: "2022-08-20"
 output: html_document
 editor_options: 
-  chunk_output_type: console
+  chunk_output_type: inline
 ---
 
 ```{r setup, include=FALSE}
@@ -356,48 +356,15 @@ write_csv(df_resultados,file = "resultados/df_resultados.csv")
 ```
   
     
-### Distância cartesiana entre abundância simulada e esperada pela aproximação de campo médio
-
-```{r distancia euclidiana entre abundancia simulada e aproximacao de campo medio, echo=TRUE,eval=FALSE}
-# dados
-df_replicas <- read_csv("resultados/df_rep_tFinal.csv") %>% 
-  mutate(t_anos = t/365.25)
-# função 
-f_dist <- function(df){
-  # dados de entrada (modelo estocastico)
-  df <- as.data.frame(df)
-  # dados modelo deterministico
-  df_det <- read_csv(file = gsub("md_Estocastico","md_CampoMedio",df$path[1])) %>% 
-    as.data.frame
-  # linear approximation for the exact time
-  df <- cbind(df,
-              apply(df_det[,-1],2,
-                    function(Y) approx(x=df_det$time,y=Y,xout = df$t_anos)$y)
-              )
-  # euclidean distance between two points
-  data.frame(.n=df$.n,
-             dist_StoDet=sqrt((df$n-df$N)^2+(df$m-df$M)^2))
-}
-# apply the function by id
-registerDoMC(3)
-df_dist <- ddply(df_replicas,"id",f_dist,.parallel = TRUE)
-# merge df_replicas with df_dist by id e .n
-df_replicas <- inner_join(df_replicas,
-                          df_dist,
-                          by=c("id",".n"))
-# gráfico exploratório
-# df_replicas %>% 
-#   ggplot(aes(x=id,y=dist_StoDet,group=id)) +
-#   geom_boxplot() +
-#   geom_jitter()
-# salvar em csv
-write_csv(df_replicas,
-          file="resultados/df_rep_tFinal.csv")
-```
 
 ## Modelos estatísticos
 
 ### GLM Binomial
+
+O modelo cheio mais plausível é aquele que considera a interação entre os polinômios (Tabela 1). Porêm este modelo não apresenta um excelente ajuste aos dados (Figura 1 e sumário do módelo 1). O predito e observado diferem em valores extremos: quando . 
+
+
+
   
 __tabela seleção de GLMs Binomiais para descrever a probabilidade de substituição 
 
@@ -429,8 +396,10 @@ l_md[[5]] <- glm(cbind(c_invasion,100-c_invasion) ~ 1,
 names(l_md) <- c("C_nm^2 * M0^2","C_nm^2 + M0^2","C_nm^2","M0^2","1")
 AICctab(l_md,weights=TRUE)
 ```
- 
- 
+
+
+
+
  
 ```{r graficos diagnostico do GLM binomial mais plausível,include=TRUE}
 res.Dharma <- DHARMa::simulateResiduals(l_md[["C_nm^2 * M0^2"]],n = 250,refit = FALSE)
@@ -470,7 +439,7 @@ md_ref <- glm(cbind(c_invasion,100-c_invasion) ~ (C_nm.z + I(C_nm.z^2))*(M0.z + 
 # todas as combinações do modelo cheio
 registerDoMC(3)
 l_dredge_nInvasions <- llply(dredge(md_ref,trace = FALSE,evaluate=FALSE), eval,.parallel = TRUE)
-# Model Averaging for the simulated data
+# Model Averaging for the observed data
 mdAvg_MuMIn <- model.avg(l_dredge_nInvasions)
 # Model Averaging for new data predictions
 df_pred <- expand.grid(M0.z=seq(min(df_resultados$M0.z),max(df_resultados$M0.z),length=60),
@@ -482,9 +451,9 @@ save(df_AICcmodavg, file="resultados/df_AICcmodavg.csv")
 ```
   
     
-__Observado e predito pelo modelo médio__
+__Figura Observado e predito pelo modelo médio__
 
-```{r glm binomial observado e predito modelo medio, comment=FALSE, message=FALSE,warning=FALSE,results="hide",fig.width=8, fig.height=30}
+```{r glm binomial observado e predito modelo medio, comment=FALSE, message=FALSE,warning=FALSE,results="hide"}
 # Predição
 df_md <- df_resultados
 # interval = 'confidence' ainda não é usado, apenas para uma avaliação visual
