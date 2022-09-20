@@ -43,15 +43,15 @@ download_file(file ="relatorio_final.Rmd",
 
 # Introdução  
    
-O modelo de crescimento exponencial incorpora o princípio fundamental de que a vida provém de outra e assim examina o comportamento de uma população que pode crescer sem limitação alguma. Ao incluir a influência que o aumento na densidade populacional pode ter na limitação do crescimento, o modelo logístico incorpora outro princípio fundamental que é o da perda de excedente de indivíduos esperado por um crescimento ilimitado. Caso uma população crescesse de forma exponencial todo o universo conhecido poderia estar colonizado por um único tipo de vida. Outro componente essencial da modulação dos eventos demográficos é a interação com outras espécies. 
-Os modelos de competição de populações em denso dependência do arcabouço de reações de difusão (estocásticos) diferem dos modelos baseados em taxas constantes (determinísticos), pois os eventos demográficos são representados como eventos probabilísticos que podem ou não ocorrer em intervalos de tempo muito pequenos. Dessa forma, os modelos estocásticos possibilitam eventos de extinção de populações que poderiam permanecer indefinidamente no predito determinístico; ou flutuações nos tamanhos populacionais, propriedade ausente nos modelos determinísticos de denso dependência linear. Os modelos estocásticos podem ser descritos por uma equação mestra, um conjunto de equações diferenciais de primeira ordem que descrevem como a probabilidade de todos os possíveis estados do sistema varia no tempo contínuo. A partir da equação mestra é possível calcular a equação diferencial do primeiro momento da distribuição de probabilidades do sistema. Usando a aproximação de campo médio, onde é pressuposto variância zero, a equação diferencial do primeiro momento converge para a solução determinística. Alternativamente à descrição de todos os estados do sistema, é possível simular trajetórias individuais no sistema com o algoritmo de Gillespie (1977), onde podemos acompanhar a trajetória da abundância de cada espécie até a extinção.
-Aqui vamos explorar a competição de 2 populações em crescimento denso dependente, N e M, em cenários de invasão da espécie M no sistema dominado por N que se encontra em sua capacidade de suporte. Usando modelos estocásticos e a aproximação de campo médio, explorei cenários de assimetria competitiva e de tamanho inicial da espécie invasora. Me pergunto a) Como a probabilidade de substituição da espécie residente pela invasora varia com o tamanho populacional inicial da invasora e da assimetria competitiva? e b) Como a presença da espécie residente reduz o tempo de extinção da espécie invasora? 
+<p>O modelo de crescimento exponencial incorpora o princípio fundamental de que a vida provém de outra e assim examina o comportamento de uma população que pode crescer sem limitação alguma. Ao incluir a influência que o aumento na densidade populacional pode ter na limitação do crescimento, o modelo logístico incorpora outro princípio fundamental que é o da perda de excedente de indivíduos esperado por um crescimento ilimitado. Caso uma população crescesse de forma exponencial todo o universo conhecido poderia estar colonizado por um único tipo de vida. Outro componente essencial da modulação dos eventos demográficos é a interação com outras espécies. </p>
+<p>Os modelos de competição de populações em denso dependência do arcabouço de reações de difusão (estocásticos) diferem dos modelos baseados em taxas constantes (determinísticos), pois os eventos demográficos são representados como eventos probabilísticos que podem ou não ocorrer em intervalos de tempo muito pequenos. Dessa forma, os modelos estocásticos possibilitam eventos de extinção de populações que poderiam permanecer indefinidamente no predito determinístico; ou flutuações nos tamanhos populacionais, propriedade ausente nos modelos determinísticos de denso dependência linear. Os modelos estocásticos podem ser descritos por uma equação mestra, um conjunto de equações diferenciais de primeira ordem que descrevem como a probabilidade de todos os possíveis estados do sistema varia no tempo contínuo. A partir da equação mestra é possível calcular a equação diferencial do primeiro momento da distribuição de probabilidades do sistema. Usando a aproximação de campo médio, onde é pressuposto variância zero, a equação diferencial do primeiro momento converge para a solução determinística. Alternativamente à descrição de todos os estados do sistema, é possível simular trajetórias individuais no sistema com o algoritmo de Gillespie (1977), onde podemos acompanhar a trajetória da abundância de cada espécie até a extinção.</p>
+<p>Aqui vamos explorar a competição de 2 populações em crescimento denso dependente, N e M, em cenários de invasão da espécie M no sistema dominado por N que se encontra em sua capacidade de suporte. Usando modelos estocásticos e a aproximação de campo médio, explorei cenários de assimetria competitiva e de tamanho inicial da espécie invasora. Me pergunto a) Como a probabilidade de substituição da espécie residente pela invasora varia com o tamanho populacional inicial da invasora e da assimetria competitiva? e b) Como a presença da espécie residente reduz o tempo de extinção da espécie invasora?</p>
 
 # Métodos
     
 ## Reações  
   
-Vamos modelar a mudança de estado do sistema, descrito por (n,m), onde n e m são a abundância de N e M, respectivamente. O modelo considera possíveis mudanças discretas de 1 indivíduo no sistema em um intervalo de tempo muito pequeno dt. As oito reações consideradas estão disponíveis na tabela 1, elas constituem um modelo de denso dependência em que a competição interespecífica é modelada de forma similar à da competição intraespecífica: pela probabilidade de exclusão de um dos dois indivíduos por evento de colisão de dois indivíduos. O modelo pressupõe que não é possível distinguir entre indivíduos de uma mesma espécie, assim, o parâmetro $\gamma$ descreve a probabilidade de qualquer um dos dois indivíduos ser excluído, por isso ele está dividido por 2.
+<p>Vamos modelar a mudança de estado do sistema, descrito por (n,m), onde n e m são a abundância de N e M, respectivamente. O modelo considera possíveis mudanças discretas de 1 indivíduo no sistema em um intervalo de tempo muito pequeno dt. As oito reações consideradas estão disponíveis na tabela 1, elas constituem um modelo de denso dependência em que a competição interespecífica é modelada de forma similar à da competição intraespecífica: pela probabilidade de exclusão de um dos dois indivíduos por evento de colisão de dois indivíduos. O modelo pressupõe que não é possível distinguir entre indivíduos de uma mesma espécie, assim, o parâmetro $\gamma$ descreve a probabilidade de qualquer um dos dois indivíduos ser excluído, por isso ele está dividido por 2.</p>
 
 ```{r tabela 1}
 df_tabela1 <- data.frame(reactions = c("n -> n + n","n -> 0","n + n -> n","n + m -> m",
@@ -73,7 +73,7 @@ df_tabela1 %>%
   
 ## The master equation and the mean-field approximation      
      
-A partir das reações é possível desenvolver uma equação mestra que descreve a taxa de mudança da probabilidade de um determinado estado [$\frac{\partial P(n,m,t)}{\partial t}$] pela diferença na taxa da probabilidade de entrada e saída deste estado (equação 1). Na primeira linha depois da igualdade, há a soma das taxa com que N pode perder um indivíduo, indo do estado (n+1,m) para o estado (n,m). Na segunda linha a taxa com que N pode ganhar um indivíduo, indo do estado (n-1,m) para o estado (n,m). Nas linhas 3 e 4 a mesma lógica para M. Na quinta linha há a taxa de saída do estado (n,m). Para detalhes veja tabela 1.
+<p>A partir das reações é possível desenvolver uma equação mestra que descreve a taxa de mudança da probabilidade de um determinado estado [$\frac{\partial P(n,m,t)}{\partial t}$] pela diferença na taxa da probabilidade de entrada e saída deste estado (equação 1). Na primeira linha depois da igualdade, há a soma das taxa com que N pode perder um indivíduo, indo do estado (n+1,m) para o estado (n,m). Na segunda linha a taxa com que N pode ganhar um indivíduo, indo do estado (n-1,m) para o estado (n,m). Nas linhas 3 e 4 a mesma lógica para M. Na quinta linha há a taxa de saída do estado (n,m). Para detalhes veja tabela 1.</p>
 
 $$
 \frac{\partial P(n,m,t)}{\partial t} = \\
@@ -82,7 +82,7 @@ P(n,m+1) (m+1) (\delta_m + m \gamma_m / 2 + n C_{m}) +\\ P(n,m-1) (m-1) \beta_m+
 - P(n,m)[n(\beta_n + \delta_n + (n-1) \gamma_n / 2 + m C_{n}) + m(\beta_m + \delta_m + (m-1) \gamma_m / 2 + n C_{m})]
 $$
 
-Na aproximação de campo médio buscamos obter o primeiro momento da distribuição de probabilidade marginal de N, E[N] = <n>, e de M, E[M] = <m>. Para isso é necessário estabelecer algumas definições: $<n> = \sum_{n=0}^{\infty} n P(n,m,t)$; $<n^2> = \sum_{n=0}^{\infty} n^2 P(n,m,t)$; $<m> = \sum_{m=0}^{\infty} m P(n,m,t)$; $<m^2> = \sum_{m=0}^{\infty} m^2 P(n,m,t)$; $<nm> = \sum_{n=0}^{\infty}\sum_{m=0}^{\infty} nm P(n,m,t)$. Para obter o primeiro momento marginal de N ou M basta multiplicar a equação mestra por n ou m e realizar o somatório (apêndice 1), e então é possível obter as equações 2a e 2b:
+<p>Na aproximação de campo médio buscamos obter o primeiro momento da distribuição de probabilidade marginal de N, E[N] = <n>, e de M, E[M] = <m>. Para isso é necessário estabelecer algumas definições: $<n> = \sum_{n=0}^{\infty} n P(n,m,t)$; $<n^2> = \sum_{n=0}^{\infty} n^2 P(n,m,t)$; $<m> = \sum_{m=0}^{\infty} m P(n,m,t)$; $<m^2> = \sum_{m=0}^{\infty} m^2 P(n,m,t)$; $<nm> = \sum_{n=0}^{\infty}\sum_{m=0}^{\infty} nm P(n,m,t)$. Para obter o primeiro momento marginal de N ou M basta multiplicar a equação mestra por n ou m e realizar o somatório (apêndice 1), e então é possível obter as equações 2a e 2b:</p>
 
 $$
 \frac{d <n>}{d t} = <n> (\beta_n - \delta_n + \gamma_n2^{-1})- <n^2>\gamma_n2^{-1} - <nm>C_n
@@ -91,7 +91,7 @@ $$
 \frac{d <m>}{d t} = <m> (\beta_m - \delta_m + \gamma_m2^{-1})- <m^2>\gamma_m2^{-1} - <mn>C_m
 $$
 
-A aproximação de campo médio pressupõe que $<n>^2 = <n^2>$, $<m>^2 = <m^2>$, $<nm> = <n><m>$. Esse pressuposto implica que a variância da dinâmica populacional denso dependente é zero e que as populações são independentes. Outro pressuposto possível para simplificar a aproximação é de que $\beta$ ou $\delta$ >> $\gamma$, assim $\gamma$ pode ser omitido como fator do primeiro momento. Essa aproximação é útil pois permite a convergência das equações acima com o modelo determinístico de competição interespecífica de duas populações com crescimento denso dependente (eq. 3a e 3b). A investigação desse modelo determinístico mostra o quê poderíamos esperar no equilíbrio caso não houvesse nenhuma flutuação devido à estocástica dos eventos demográficos.
+<p>A aproximação de campo médio pressupõe que $<n>^2 = <n^2>$, $<m>^2 = <m^2>$, $<nm> = <n><m>$. Esse pressuposto implica que a variância da dinâmica populacional denso dependente é zero e que as populações são independentes. Outro pressuposto possível para simplificar a aproximação é de que $\beta$ ou $\delta$ >> $\gamma$, assim $\gamma$ pode ser omitido como fator do primeiro momento. Essa aproximação é útil pois permite a convergência das equações acima com o modelo determinístico de competição interespecífica de duas populações com crescimento denso dependente (eq. 3a e 3b). A investigação desse modelo determinístico mostra o quê poderíamos esperar no equilíbrio caso não houvesse nenhuma flutuação devido à estocástica dos eventos demográficos.</p>
 
 $$
 \frac{d <n>}{d t} = <n> (\beta_n - \delta_n)- <n>^2\gamma_n2^{-1} - <n><m>C_n
@@ -103,7 +103,7 @@ $$
 
 ## The computational model
 
-A ideia do algoritmo de Gillespie (1977) se baseia no fato de que a distribuição de tempos entre mudanças de estados pode ser descrita por uma distribuição exponencial, então computamos separadamente as mudanças de estado e o tempo entre mudanças, reduzindo o tempo de simulação.  O tempo entre mudança de estados pode ser obtido pela divisão do log de uma amostra de distribuição uniforme padrão pela soma das taxas de saída do estado (janela de código 1). Existem 4 possíveis transições de estado: cada uma das duas espécies pode ganhar ou perder um indivíduo por evento demográfico no intervalo de tempo dt. A taxa de ganho de um indivíduo de N ($n\_p$) é  $n\_p=\beta n$. A taxa de perda de um indivíduo de N ($n\_m$) é $n\_m = n[\delta +(n-1)\gamma2^{-1} + mC_n]$. A mesma lógica se aplica para as taxas de ganho e perda da espécie M (eq. 1 e janela de código 1). Após o sorteio do tempo do próximo evento demográfico, é feito um sorteio da mudança de estado com probabilidade dada pela contribuição relativa de cada taxa de saída (janela de código 1), então o sistema é atualizado. Nossa simulação termina quando alguma população atinge o zero. 
+<p>A ideia do algoritmo de Gillespie (1977) se baseia no fato de que a distribuição de tempos entre mudanças de estados pode ser descrita por uma distribuição exponencial, então computamos separadamente as mudanças de estado e o tempo entre mudanças, reduzindo o tempo de simulação.  O tempo entre mudança de estados pode ser obtido pela divisão do log de uma amostra de distribuição uniforme padrão pela soma das taxas de saída do estado (janela de código 1). Existem 4 possíveis transições de estado: cada uma das duas espécies pode ganhar ou perder um indivíduo por evento demográfico no intervalo de tempo dt. A taxa de ganho de um indivíduo de N ($n\_p$) é  $n\_p=\beta n$. A taxa de perda de um indivíduo de N ($n\_m$) é $n\_m = n[\delta +(n-1)\gamma2^{-1} + mC_n]$. A mesma lógica se aplica para as taxas de ganho e perda da espécie M (eq. 1 e janela de código 1). Após o sorteio do tempo do próximo evento demográfico, é feito um sorteio da mudança de estado com probabilidade dada pela contribuição relativa de cada taxa de saída (janela de código 1), então o sistema é atualizado. Nossa simulação termina quando alguma população atinge o zero.</p>
 
 __janela de código 1__
 
@@ -140,7 +140,7 @@ readr::write_csv(df_dinamica,file = path_csv)
 
 ## Cenários Simulados: assimetria competitiva e tamanho inicial da invasora
   
-Apenas o parâmetro que descreve a probabilidade de exclusão de uma espécie pela outra por colisão (parâmetros $C_n$ e $C_m$, tabela 1) variou entre simulações. Os demais parâmetros populacionais foram iguais: $\beta =$ `r format(0.7/365.25,scientific = TRUE,digits = 4)`, $\delta =$ `r format(0.69/365.25,scientific = TRUE,digits = 4)`, $\gamma =$ `r format(2*(0.7/365.25-0.69/365.25)/50,scientific = TRUE,digits = 4)`. Os parâmetros de competição interespecífica ($C_n$ e $C_m$) variam entre $\gamma$ e $2\gamma$, tal que a assimetria competitiva, definido por $(C_n - C_m)/ \gamma$, variou entre -1 e 1 (figura 1). O tamanho inicial da espécie invasora variou entre 1% e 100% da capacidade de suporte K = 50 indivíduos (Figura 1). Foram simulados 11 cenários de tamanho inicial da invasora e 11 cenários de assimetria competitiva, totalizando 121 cenários, cada um com 100 réplicas. 
+<p>Apenas o parâmetro que descreve a probabilidade de exclusão de uma espécie pela outra por colisão (parâmetros $C_n$ e $C_m$, tabela 1) variou entre simulações. Os demais parâmetros populacionais foram iguais: $\beta =$ `r format(0.7/365.25,scientific = TRUE,digits = 4)`, $\delta =$ `r format(0.69/365.25,scientific = TRUE,digits = 4)`, $\gamma =$ `r format(2*(0.7/365.25-0.69/365.25)/50,scientific = TRUE,digits = 4)`. Os parâmetros de competição interespecífica ($C_n$ e $C_m$) variam entre $\gamma$ e $2\gamma$, tal que a assimetria competitiva, definido por $(C_n - C_m)/ \gamma$, variou entre -1 e 1 (figura 1). O tamanho inicial da espécie invasora variou entre 1% e 100% da capacidade de suporte K = 50 indivíduos (Figura 1). Foram simulados 11 cenários de tamanho inicial da invasora e 11 cenários de assimetria competitiva, totalizando 121 cenários, cada um com 100 réplicas.</p> 
 
     
 ```{r graficos dos cenarios simulados, echo=FALSE,eval=TRUE,cache=TRUE}
@@ -164,8 +164,8 @@ __Figura 1__ Cenários simulados de competição interespecífica.  Eixo y: assi
 
 ### anaĺise dos dados
 
-Para responder a primeira pergunta, como a probabilidade de substituição da residente varia em função do tamanho inicial da invasora e da assimetria competitiva, é possível usar a abordagem de campo médio e a de simulação de trajetórias individuais. No caso da abordagem de campo médio, exceto pelo cenário de equivalência das espécies (assimetria competitiva nula) que depende totalmente das condições iniciais e do regime de perturbações, dado tempo suficiente haverá certamente a substituição ou a não substituição da espécie residente pela invasora, em função da assimetria competitiva a favor da invasora ou da residente, respectivamente. Nessa abordagem basta plotar as soluções de equilíbrio das equações 3a e 3b em um plano de fase definido pelas abundância de N e M para avaliar qual o ponto de equilíbrio estável para definir se haverá ou não evento de substituição. No caso da simulação de trajetórias individuais, considerei a identidade da espécie que permanece após a primeira extinção. Se a espécie que permanece é a invasora então ocorreu um evento de substituição da residente pela invasora. Para descrever a probabilidade de substituição na simulação das trajetórias indivíduais usei um GLM binomial com o tamanho inicial da invasora e a assimetria competitiva como variáveis preditoras. Usei uma abordagem baseada em modelo médio (REF), em que a partir de um modelo cheio é ajustado todos os possíveis submodelos e então a predição de cada modelo é ponderada pelo peso de evidência do submodelo. O GLM binomial cheio considerou a interação do polinômio de segundo grau de cada preditora.
-Para responder a segunda pergunta, como a presença da residente reduz o tempo de extinção da invasora, é necessário descrever o tempo de extinção da invasora nas simulações de trajetórias individuais em duas situações. A primeira situação é obtida pela análise da distribuição de tempos de extinção da invasora na presença da competidora, ou seja, os tempos totais até a espécie invasora se extinguir, seja ela a primeira ou última a se extinguir. Essa primeira situação pode ser descrita por um LMM em que os tempos de extinção de réplicas de uma mesma bateria de simulação (combinação única de tamanho inicial e assimetria competitiva) são agrupadas na estrutura aleatória (REF), e então usei as mesmas preditoras do GLM binomial para construir um modelo cheio. Na segunda situação considerei apenas o tempo parcial de extinção na ausência da residente, ou seja, considerei que o tempo é zerado no momento do evento de substituição. Para descrever a segunda situação é possível usar um LM em que o modelo cheio é composto pelo polinômio de segundo grau do tamanho da espécie invasora no momento do evento de substituição. Em ambas situações usei uma abordagem de modelo médio para construir o predito para os tempos de extinção. Então calculei a diferença no predito pelo modelo médio na segunda situação pela primeira situação.
+<p>Para responder a primeira pergunta, como a probabilidade de substituição da residente varia em função do tamanho inicial da invasora e da assimetria competitiva, é possível usar a abordagem de campo médio e a de simulação de trajetórias individuais. No caso da abordagem de campo médio, exceto pelo cenário de equivalência das espécies (assimetria competitiva nula) que depende totalmente das condições iniciais e do regime de perturbações, dado tempo suficiente haverá certamente a substituição ou a não substituição da espécie residente pela invasora, em função da assimetria competitiva a favor da invasora ou da residente, respectivamente. Nessa abordagem basta plotar as soluções de equilíbrio das equações 3a e 3b em um plano de fase definido pelas abundância de N e M para avaliar qual o ponto de equilíbrio estável para definir se haverá ou não evento de substituição. No caso da simulação de trajetórias individuais, considerei a identidade da espécie que permanece após a primeira extinção. Se a espécie que permanece é a invasora então ocorreu um evento de substituição da residente pela invasora. Para descrever a probabilidade de substituição na simulação das trajetórias indivíduais usei um GLM binomial com o tamanho inicial da invasora e a assimetria competitiva como variáveis preditoras. Usei uma abordagem baseada em modelo médio (REF), em que a partir de um modelo cheio é ajustado todos os possíveis submodelos e então a predição de cada modelo é ponderada pelo peso de evidência do submodelo. O GLM binomial cheio considerou a interação do polinômio de segundo grau de cada preditora.</p>
+<p>Para responder a segunda pergunta, como a presença da residente reduz o tempo de extinção da invasora, é necessário descrever o tempo de extinção da invasora nas simulações de trajetórias individuais em duas situações. A primeira situação é obtida pela análise da distribuição de tempos de extinção da invasora na presença da competidora, ou seja, os tempos totais até a espécie invasora se extinguir, seja ela a primeira ou última a se extinguir. Essa primeira situação pode ser descrita por um LMM em que os tempos de extinção de réplicas de uma mesma bateria de simulação (combinação única de tamanho inicial e assimetria competitiva) são agrupadas na estrutura aleatória (REF), e então usei as mesmas preditoras do GLM binomial para construir um modelo cheio. Na segunda situação considerei apenas o tempo parcial de extinção na ausência da residente, ou seja, considerei que o tempo é zerado no momento do evento de substituição. Para descrever a segunda situação é possível usar um LM em que o modelo cheio é composto pelo polinômio de segundo grau do tamanho da espécie invasora no momento do evento de substituição. Em ambas situações usei uma abordagem de modelo médio para construir o predito para os tempos de extinção. Então calculei a diferença no predito pelo modelo médio na segunda situação pela primeira situação.</p>
 
 # Resultados
 
@@ -203,7 +203,7 @@ l_p[[2]] <- ggplot(df_plot,aes(x=M0,y=C_nm,fill=lower.CL)) +
        fill="Probability") + theme_classic()
 l_p[[3]] <- ggplot(df_plot,aes(x=M0,y=C_nm,fill=upper.CL)) +
   geom_tile() +
-  scale_fill_gradient2(limits = c(0,1),midpoint=0.5, low="red", high="blue",mid="green") +
+  scale_fill_gradient2(limits = c(0,max_fill),midpoint=max_fill/2, low="red", high="blue",mid="green") +
   labs(title="Upper IC (95%)",
        fill="Probability") + theme_classic()
 grid.arrange(grobs=l_p,
@@ -304,7 +304,7 @@ f_2sppDLV <- function(X,max_t,int_t,path_csv){
 }
 ```
 
-```{r simulacao do modelo deterministico,echo=TRUE,eval=FALSE}
+```{r simulacao do modelo deterministico,echo=FALSE,eval=FALSE}
 # resultados dos modelos estocasticos
 df_resultados <- read_csv(file = "resultados/df_resultados.csv") |> 
   mutate(t_max_anos = t_max/365.25)
@@ -505,7 +505,7 @@ summary(l_md[["C_nm^2 * M0^2"]])
 #### Modelo Médio
   
     
-```{r construcao do modelo medio ,eval=FALSE,echo=TRUE}
+```{r construcao do modelo medio ,eval=FALSE,echo=FALSE}
 # dados
 df_resultados <- read_csv("resultados/df_resultados.csv")
 f_z <- function(x){
@@ -534,7 +534,7 @@ save(df_AICcmodavg, file="resultados/df_AICcmodavg.csv")
 ```
   
     
-```{r glm binomial observado e predito modelo medio, comment=FALSE, message=FALSE,warning=FALSE,results="hide"}
+```{r glm binomial observado e predito modelo medio, echo=F, comment=FALSE, message=FALSE,warning=FALSE,results="hide"}
 # dados
 df_resultados <- read_csv("resultados/df_resultados.csv")
 f_z <- function(x){
@@ -570,14 +570,106 @@ ggplot(df_md,aes(x=c_invasion,y=Pr_invasion)) +
        color = "") +
   scale_color_manual(values = colors)
 ```
-  
+    
+__Figura A3__ predito pelo modelo médio e observado.   
 
 ### Tempo de Extinção
 
-#### 
+#### Tempo para extinção na ausência de competidora
 
-```{r analise dos dados de tempo de extincao}
-
+```{r analise dos dados de tempo de extincao conjunto completo, fig.height=5,fig.width=8}
+df_1sp <- read_csv(file="resultados/df_TE1sp.csv") |> 
+  mutate(log_TE = log(TE), log_M0 = log(M0))
+l_p <- list()
+l_p[[1]] <- df_1sp |> 
+  pivot_longer(cols=c("TE","log_TE"),names_to = "variaveis",values_to = "valores") |> 
+  ggplot(aes(x=,y=valores)) +
+  geom_density() +
+  facet_wrap(~variaveis,scales="free") +
+  coord_flip()
+l_p[[2]] <- df_1sp |> 
+  pivot_longer(cols=c("M0","log_M0"),names_to = "variaveis",values_to = "valores") |> 
+  ggplot(aes(x="",y=valores)) +
+  geom_jitter(alpha=0.2) +
+  geom_boxplot() +
+  facet_wrap(~variaveis,scales="free")
+l_p[[3]] <- df_1sp |> 
+  mutate(label = "escala padrão") |> 
+  ggplot(aes(x=M0,y=TE)) +
+  geom_point() +
+  geom_smooth(method = "loess",formula = "y~x") +
+  facet_wrap(~label)
+l_p[[4]] <- df_1sp |> 
+  mutate(label = "escala log") |> 
+  ggplot(aes(x=M0,y=log_TE)) +
+  geom_point() +
+  geom_smooth(method = "loess",formula = "y~x") +
+  facet_wrap(~label)
+grid.arrange(grobs=l_p,ncol=2,top="Conjunto Completo")
+```
+```{r analise dos dados de tempo de extincao conjunto M0 menor do que100, fig.height=5,fig.width=8}
+df_1sp <- read_csv(file="resultados/df_TE1sp.csv") |> 
+  filter(M0<=100 & M0>1) |> 
+  mutate(log_TE = log(TE), log_M0 = log(M0))
+l_p <- list()
+l_p[[1]] <- df_1sp |> 
+  pivot_longer(cols=c("TE","log_TE"),names_to = "variaveis",values_to = "valores") |> 
+  ggplot(aes(x=,y=valores)) +
+  geom_density() +
+  facet_wrap(~variaveis,scales="free") +
+  coord_flip()
+l_p[[2]] <- df_1sp |> 
+  pivot_longer(cols=c("M0","log_M0"),names_to = "variaveis",values_to = "valores") |> 
+  ggplot(aes(x="",y=valores)) +
+  geom_jitter(alpha=0.2) +
+  geom_boxplot() +
+  facet_wrap(~variaveis,scales="free")
+l_p[[3]] <- df_1sp |> 
+  mutate(label = "escala padrão") |> 
+  ggplot(aes(x=M0,y=TE)) +
+  geom_point() +
+  geom_smooth(method = "loess",formula = "y~x") +
+  facet_wrap(~label)
+l_p[[4]] <- df_1sp |> 
+  mutate(label = "escala log") |> 
+  ggplot(aes(x=M0,y=log_TE)) +
+  geom_point() +
+  geom_smooth(method = "loess",formula = "y~x") +
+  facet_wrap(~label)
+grid.arrange(grobs=l_p,ncol=2,top="Conjunto Parcial: 100 >= tamanho inicial > 1")
 ```
 
+__Figura A4__ Conjunto de dados completo do Tempo estimado de extinção na ausência da competidora 
+
+##### Ajuste modelo cheio LM TE 1sp
+
+__Tabela A6__ Tabela seleção do modelo referência para descrever o log(Tempo de Extinção).  
+
+```{r ajuste modelo cheio lm TE 1sp}
+# dados
+df_1sp <- read_csv(file="resultados/df_TE1sp.csv") |> 
+  filter(M0<=100 & M0>1) |> 
+  mutate(log_TE = log(TE), log_M0 = log(M0))
+# modelos
+l_md <- list()
+l_md[[1]] <- lm(log_TE ~ M0 + I(M0^2),data = df_1sp)
+l_md[[2]] <- lm(log_TE ~ M0,data = df_1sp)
+l_md[[3]] <- lm(log_TE ~ 1,data = df_1sp)
+names(l_md) <- c("M0^2","M0","1")
+AICctab(l_md,weights=TRUE)
+```
+
+```{r graficos diagnostico do LM referencia TE 1sp,include=TRUE,eval=TRUE}
+res.Dharma <- DHARMa::simulateResiduals(l_md[["M0^2"]],n = 250,refit = FALSE)
+plot(res.Dharma)
+```
+    
+__Figura A5__ Resíduos Quantílicos LM referência para descrever o tempo de extinção na ausência de residente. Resíduos quantílícos obtidos com a função simulateResiduals do pacote DHARMa, com 250 simulações.  
+  
+
+__tabela A6__ Sumário do modelo 2: LM referência polinômio de segundo grau
+
+```{r sumário do LM referencia do tempo de extincao na ausencia da residente}
+summary(l_md[["M0^2"]])
+```
 
