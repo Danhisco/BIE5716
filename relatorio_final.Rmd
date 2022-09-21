@@ -8,7 +8,7 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE,message = FALSE,warning = FALSE,cache = TRUE)
+knitr::opts_chunk$set(echo = FALSE,message = FALSE,warning = FALSE,cache = FALSE)
 ```
 
 ```{r pacotes, include=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE}
@@ -143,7 +143,7 @@ readr::write_csv(df_dinamica,file = path_csv)
 <p>Apenas o parâmetro que descreve a probabilidade de exclusão de uma espécie pela outra por colisão (parâmetros $C_n$ e $C_m$, tabela 1) variou entre simulações. Os demais parâmetros populacionais foram iguais: $\beta =$ `r format(0.7/365.25,scientific = TRUE,digits = 4)`, $\delta =$ `r format(0.69/365.25,scientific = TRUE,digits = 4)`, $\gamma =$ `r format(2*(0.7/365.25-0.69/365.25)/50,scientific = TRUE,digits = 4)`. Os parâmetros de competição interespecífica ($C_n$ e $C_m$) variam entre $\gamma$ e $2\gamma$, tal que a assimetria competitiva, definido por $(C_n - C_m)/ \gamma$, variou entre -1 e 1 (figura 1). O tamanho inicial da espécie invasora variou entre 1% e 100% da capacidade de suporte K = 50 indivíduos (Figura 1). Foram simulados 11 cenários de tamanho inicial da invasora e 11 cenários de assimetria competitiva, totalizando 121 cenários, cada um com 100 réplicas.</p> 
 
     
-```{r graficos dos cenarios simulados, echo=FALSE,eval=TRUE,cache=TRUE}
+```{r graficos dos cenarios simulados, echo=FALSE,eval=TRUE}
 df_sim0 <- read_csv("csv/df_sim0.csv")
 # gráficos
 df_sim0 |> 
@@ -505,7 +505,7 @@ summary(l_md[["C_nm^2 * M0^2"]])
 #### Modelo Médio
   
     
-```{r construcao do modelo medio ,eval=FALSE,echo=FALSE}
+```{r construcao do modelo medio GLM Binomial,eval=FALSE,echo=FALSE}
 # dados
 df_resultados <- read_csv("resultados/df_resultados.csv")
 f_z <- function(x){
@@ -607,9 +607,9 @@ l_p[[4]] <- df_1sp |>
   facet_wrap(~label)
 grid.arrange(grobs=l_p,ncol=2,top="Conjunto Completo")
 ```
-```{r analise dos dados de tempo de extincao conjunto M0 menor do que100, fig.height=5,fig.width=8}
+```{r analise dos dados de tempo de extincao conjunto M0 menor do que 60, fig.height=5,fig.width=8}
 df_1sp <- read_csv(file="resultados/df_TE1sp.csv") |> 
-  filter(M0<=100 & M0>1) |> 
+  filter(M0<=60 & M0>1) |> 
   mutate(log_TE = log(TE), log_M0 = log(M0))
 l_p <- list()
 l_p[[1]] <- df_1sp |> 
@@ -636,7 +636,7 @@ l_p[[4]] <- df_1sp |>
   geom_point() +
   geom_smooth(method = "loess",formula = "y~x") +
   facet_wrap(~label)
-grid.arrange(grobs=l_p,ncol=2,top="Conjunto Parcial: 100 >= tamanho inicial > 1")
+grid.arrange(grobs=l_p,ncol=2,top="Conjunto Parcial: 60 >= tamanho inicial > 1")
 ```
 
 __Figura A4__ Conjunto de dados completo do Tempo estimado de extinção na ausência da competidora 
@@ -654,13 +654,15 @@ df_1sp <- read_csv(file="resultados/df_TE1sp.csv") |>
 l_md <- list()
 l_md[[1]] <- lm(log_TE ~ M0 + I(M0^2),data = df_1sp)
 l_md[[2]] <- lm(log_TE ~ M0,data = df_1sp)
-l_md[[3]] <- lm(log_TE ~ 1,data = df_1sp)
-names(l_md) <- c("M0^2","M0","1")
+l_md[[3]] <- lm(log_TE ~ log_M0 + I(log_M0^2),data = df_1sp)
+l_md[[4]] <- lm(log_TE ~ log_M0,data = df_1sp)
+l_md[[5]] <- lm(log_TE ~ 1,data = df_1sp)
+names(l_md) <- c("M0^2","M0","log(M0)^2","log(M0)","1")
 AICctab(l_md,weights=TRUE)
 ```
 
 ```{r graficos diagnostico do LM referencia TE 1sp,include=TRUE,eval=TRUE}
-res.Dharma <- DHARMa::simulateResiduals(l_md[["M0^2"]],n = 250,refit = FALSE)
+res.Dharma <- DHARMa::simulateResiduals(l_md[["log(M0)^2"]],n = 250,refit = FALSE)
 plot(res.Dharma)
 ```
     
@@ -670,6 +672,172 @@ __Figura A5__ Resíduos Quantílicos LM referência para descrever o tempo de ex
 __tabela A6__ Sumário do modelo 2: LM referência polinômio de segundo grau
 
 ```{r sumário do LM referencia do tempo de extincao na ausencia da residente}
-summary(l_md[["M0^2"]])
+summary(l_md[["log(M0)^2"]])
 ```
+
+```{r graficos diagnostico padrao}
+par(mfrow=c(2,2))
+plot(l_md[["log(M0)^2"]])
+```
+
+
+###### Modelo Médio
+
+
+```{r lm TE 1sp modelo medio}
+# dados
+df_1sp <- read_csv(file="resultados/df_TE1sp.csv") |> 
+  filter(M0<=100 & M0>1) |> 
+  mutate(log_TE = log(TE), log_M0 = log(M0))
+# modelo referência
+md_ref <- lm(log_TE ~ log_M0 + I(log_M0^2),
+             data = df_1sp, na.action = "na.fail")
+# todas as combinações do modelo cheio
+registerDoMC(3)
+l_dredge_nInvasions <- llply(dredge(md_ref,trace = FALSE,evaluate=FALSE), eval,.parallel = TRUE)
+# Model Averaging for the observed data
+mdAvg_MuMIn <- model.avg(l_dredge_nInvasions)
+# Model Averaging for new data predictions
+# Predição
+df_md <- df_1sp
+# interval = 'confidence' ainda não é usado, apenas para uma avaliação visual
+df_md$log_TE_predict <- predict(mdAvg_MuMIn,type="response")
+# Gráfico
+colors <- c("loess" = "blue", "1 : 1" = "black")
+ggplot(df_md,aes(x=log_TE,y=log_TE_predict)) +
+  geom_point(alpha=0.3) + 
+  geom_smooth(aes(color="loess"),method = "loess",formula = "y~x",se=FALSE) +
+  geom_abline(aes(color="1 : 1"),slope=1,intercept = 0,size=2) +
+  labs(x="observado",
+       y="predito",
+       title="log(TE) ~ log(M0)^2: Predito pelo modelo médio X Observado",
+       color = "") +
+  scale_color_manual(values = colors)
+```
+
+
+##### Ajuste modelo cheio GLM Gamma(log) TE 1sp
+
+__Tabela A7__ GLM Gamma(log): Tabela seleção do modelo referência para descrever o log(Tempo de Extinção).  
+
+```{r ajuste modelo cheio lm TE 1sp}
+# dados
+df_1sp <- read_csv(file="resultados/df_TE1sp.csv") |> 
+  filter(M0<=60 & M0>1) |> 
+  mutate(log_TE = log(TE), log_M0 = log(M0))
+# modelos
+l_md <- list()
+l_md[[1]] <- glm(log_TE ~ M0 + I(M0^2),data = df_1sp,Gamma(log))
+l_md[[2]] <- glm(log_TE ~ M0,data = df_1sp,Gamma(log))
+l_md[[3]] <- glm(log_TE ~ log_M0 + I(log_M0^2),data = df_1sp,Gamma(log))
+l_md[[4]] <- glm(log_TE ~ log_M0,data = df_1sp,Gamma(log))
+l_md[[5]] <- glm(log_TE ~ 1,data = df_1sp,Gamma(log))
+l_md[[6]] <- lm(log_TE ~ M0 + I(M0^2),data = df_1sp)
+l_md[[7]] <- lm(log_TE ~ log_M0 + I(log_M0^2),data = df_1sp)
+names(l_md) <- c("M0^2","M0","log(M0)^2","log(M0)","1","N:M0^2","N:log(M0)^2")
+AICctab(l_md,weights=TRUE)
+```
+
+```{r graficos diagnostico do LM referencia TE 1sp,include=TRUE,eval=TRUE}
+res.Dharma <- DHARMa::simulateResiduals(l_md[["log(M0)^2"]],n = 250,refit = FALSE)
+plot(res.Dharma)
+```
+    
+__Figura A5__ Resíduos Quantílicos LM referência para descrever o tempo de extinção na ausência de residente. Resíduos quantílícos obtidos com a função simulateResiduals do pacote DHARMa, com 250 simulações.  
+  
+
+__tabela A6__ Sumário do modelo 2: LM referência polinômio de segundo grau
+
+```{r sumário do LM referencia do tempo de extincao na ausencia da residente}
+summary(l_md[["log(M0)^2"]])
+```
+
+```{r graficos diagnostico padrao}
+par(mfrow=c(2,2))
+plot(l_md[["log(M0)^2"]])
+```
+
+
+###### Modelo Médio
+
+
+```{r lm TE 1sp modelo medio}
+# dados
+df_1sp <- read_csv(file="resultados/df_TE1sp.csv") |> 
+  filter(M0<=100 & M0>1) |> 
+  mutate(log_TE = log(TE), log_M0 = log(M0))
+# modelo referência
+md_ref <- glm(TE ~ log_M0 + I(log_M0^2),data = df_1sp, Gamma(log), na.action = "na.fail")
+# todas as combinações do modelo cheio
+registerDoMC(3)
+l_dredge_nInvasions <- llply(dredge(md_ref,trace = FALSE,evaluate=FALSE), eval,.parallel = TRUE)
+# Model Averaging for the observed data
+mdAvg_MuMIn <- model.avg(l_dredge_nInvasions)
+# Model Averaging for new data predictions
+# Predição
+df_md <- df_1sp
+# interval = 'confidence' ainda não é usado, apenas para uma avaliação visual
+df_md$TE_predict <- predict(mdAvg_MuMIn,type="response")
+# Gráfico
+colors <- c("loess" = "blue", "1 : 1" = "black")
+ggplot(df_md,aes(x=TE,y=TE_predict)) +
+  geom_point(alpha=0.3) + 
+  geom_smooth(aes(color="loess"),method = "loess",formula = "y~x",se=FALSE) +
+  geom_abline(aes(color="1 : 1"),slope=1,intercept = 0,size=2) +
+  labs(x="observado",
+       y="predito",
+       title="Gamma(log)[TE ~ log(M0)^2] Predito pelo modelo médio X Observado",
+       color = "") +
+  scale_color_manual(values = colors)
+```
+  
+    
+###### Predição final Modelo Médio LM: log(TE) ~ log(M0)^2  
+
+```{r LM TE 1 sp - modelo medio para novo conjunto de dados,echo=FALSE,eval=FALSE}
+# dados
+df_1sp <- read_csv(file="resultados/df_TE1sp.csv") |> 
+  filter(M0<=50 & M0>1) |> 
+  mutate(log_TE = log(TE), log_M0 = log(M0))
+# modelo referência
+md_ref <- lm(log_TE ~ log_M0 + I(log_M0^2),data = df_1sp,na.action = "na.fail")
+# todas as combinações do modelo cheio
+registerDoMC(3)
+l_dredge_nInvasions <- llply(dredge(md_ref,trace = FALSE,evaluate=FALSE), eval,.parallel = TRUE)
+# Model Averaging for new data predictions
+df_pred <- df_1sp
+  # expand.grid(log_M0=seq(min(df_1sp$log_M0),max(df_1sp$log_M0),length=60))
+# esse demora com esse tanto de pontos
+df_AICcmodavg_TE1sp <- modavgPred(l_dredge_nInvasions,newdata = df_pred) %>%
+  cbind(df_pred)
+df_AICcmodavg_TE1sp <- df_AICcmodavg_TE1sp |> 
+  select(mod.avg.pred,lower.CL,upper.CL,M0,TE,log_TE,log_M0) |> 
+  mutate(TE_predict = exp(mod.avg.pred),
+         TE_lower = exp(lower.CL),
+         TE_upper = exp(upper.CL))
+write_csv(df_AICcmodavg_TE1sp, file="resultados/df_AICcmodavg_TE1sp.csv")
+```
+```{r LM TE 1 sp - graficos exploratorios modelo medio}
+df_AICcmodavg_TE1sp <- read_csv("resultados/df_AICcmodavg_TE1sp.csv")
+l_p <- list()
+l_p[[1]] <- df_AICcmodavg_TE1sp |> 
+  mutate(label = "log(Tempo Extinção)") |> 
+  ggplot(aes(x=M0,y=log_TE)) +
+  geom_point() +
+  geom_ribbon(aes(ymin=lower.CL,ymax=upper.CL),color="blue") +
+  geom_line(aes(x=M0,y=mod.avg.pred),color="red",size=1,alpha=0.9) +
+  labs(y="") +
+  facet_wrap(~label)
+l_p[[2]] <- df_AICcmodavg_TE1sp |> 
+  mutate(label = "Tempo Extinção") |> 
+  ggplot(aes(x=M0,y=TE)) +
+  geom_point() +
+  geom_ribbon(aes(ymin=TE_lower,ymax=TE_upper),color="blue") +
+  geom_line(aes(x=M0,y=TE_predict),color="red",size=1,alpha=0.9) +
+  labs(y="") +
+  facet_wrap(~label)
+grid.arrange(grobs=l_p,ncol=2,top="Tempo de extinção observado e predito pelo modelo médio - LM:log(TE) ~ log(M0)^2")    
+```
+
+      
 
