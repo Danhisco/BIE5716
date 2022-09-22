@@ -92,7 +92,7 @@ $$
 \frac{d <m>}{d t} = <m> (\beta_m - \delta_m + \gamma_m2^{-1})- <m^2>\gamma_m2^{-1} - <mn>C_m
 $$
 
-<p>A aproximação de campo médio pressupõe que $<n>^2 = <n^2>$, $<m>^2 = <m^2>$, $<nm> = <n><m>$. Esse pressuposto implica que a variância da dinâmica populacional denso dependente é zero e que as populações são independentes. Outro pressuposto possível para simplificar a aproximação é de que $\beta$ ou $\delta$ >> $\gamma$, assim $\gamma$ pode ser omitido como fator do primeiro momento. Essa aproximação é útil pois permite a convergência das equações acima com o modelo determinístico de competição interespecífica de duas populações com crescimento denso dependente (eq. 3a e 3b). A investigação desse modelo determinístico mostra o quê poderíamos esperar no equilíbrio caso não houvesse nenhuma flutuação devido à estocástica dos eventos demográficos.</p>
+<p>A aproximação de campo médio pressupõe que $<n>^2 = <n^2>$, $<m>^2 = <m^2>$, $<nm> = <n><m>$. Esse pressuposto implica que a variância da dinâmica populacional denso dependente é zero e que as populações são independentes. Outro pressuposto possível para simplificar a aproximação é de que $\beta$ ou $\delta$ >> $\gamma$, assim $\gamma$ pode ser omitido como fator do primeiro momento. Essa aproximação é útil pois permite a convergência das equações acima com o modelo determinístico de competição interespecífica de duas populações com crescimento denso dependente (eq. 3a e 3b). </p>
 
 $$
 \frac{d <n>}{d t} = <n> (\beta_n - \delta_n)- <n>^2\gamma_n2^{-1} - <n><m>C_n
@@ -100,10 +100,18 @@ $$
 $$
 \frac{d <m>}{d t} = <m> (\beta_m - \delta_m)- <m>^2\gamma_m2^{-1} - <m><n>C_m
 $$
-    
+<p> A investigação desse modelo determinístico no equilíbrio mostra o quê poderíamos esperar no longo prazo caso não houvesse nenhuma flutuação devido à estocástica dos eventos demográficos. No espaço de fase definido pela abundância da espécie residente, no eixo x, e da invasora, eixo y, a isolinha descreve as combinações de tamanhos populacionais onde o crescimento populacional da espécie focal é zero. Para explorar os cenários determinísticos no equilíbrio é possível expressar as duas isolinhas em função da abundância da invasora (eq. 4a e 4b e figura 1).</p>
+
+
+$$
+<m> = \frac{\beta_n - \delta_n}{C_n} - \frac{<n'>\gamma_n}{2C_n}
+$$
+$$
+<m'> = \frac{2(\beta_m - \delta_m)}{\gamma_m} - \frac{2C_m<n>}{\gamma_m} 
+$$
 
 ## The computational model
-
+´
 <p>A ideia do algoritmo de Gillespie (1977) se baseia no fato de que a distribuição de tempos entre mudanças de estados pode ser descrita por uma distribuição exponencial, então computamos separadamente as mudanças de estado e o tempo entre mudanças, reduzindo o tempo de simulação.  O tempo entre mudança de estados pode ser obtido pela divisão do log de uma amostra de distribuição uniforme padrão pela soma das taxas de saída do estado (janela de código 1). Existem 4 possíveis transições de estado: cada uma das duas espécies pode ganhar ou perder um indivíduo por evento demográfico no intervalo de tempo dt. A taxa de ganho de um indivíduo de N ($n\_p$) é  $n\_p=\beta n$. A taxa de perda de um indivíduo de N ($n\_m$) é $n\_m = n[\delta +(n-1)\gamma2^{-1} + mC_n]$. A mesma lógica se aplica para as taxas de ganho e perda da espécie M (eq. 1 e janela de código 1). Após o sorteio do tempo do próximo evento demográfico, é feito um sorteio da mudança de estado com probabilidade dada pela contribuição relativa de cada taxa de saída (janela de código 1), então o sistema é atualizado. Nossa simulação termina quando alguma população atinge o zero.</p>
 
 __janela de código 1__
@@ -139,23 +147,57 @@ readr::write_csv(df_dinamica,file = path_csv)
 ```
   
 
-## Cenários Simulados: assimetria competitiva e tamanho inicial da invasora
+## Cenários explorados de assimetria competitiva e tamanho inicial da invasora
   
-<p>Apenas o parâmetro que descreve a probabilidade de exclusão de uma espécie pela outra por colisão (parâmetros $C_n$ e $C_m$, tabela 1) variou entre simulações. Os demais parâmetros populacionais foram iguais: $\beta =$ `r format(0.7/365.25,scientific = TRUE,digits = 4)`, $\delta =$ `r format(0.69/365.25,scientific = TRUE,digits = 4)`, $\gamma =$ `r format(2*(0.7/365.25-0.69/365.25)/50,scientific = TRUE,digits = 4)`. Os parâmetros de competição interespecífica ($C_n$ e $C_m$) variam entre $\gamma$ e $2\gamma$, tal que a assimetria competitiva, definido por $(C_n - C_m)/ \gamma$, variou entre -1 e 1 (figura 1). O tamanho inicial da espécie invasora variou entre 1% e 100% da capacidade de suporte K = 50 indivíduos (Figura 1). Foram simulados 11 cenários de tamanho inicial da invasora e 11 cenários de assimetria competitiva, totalizando 121 cenários, cada um com 100 réplicas.</p> 
+<p>Apenas o parâmetro que descreve a probabilidade de exclusão de uma espécie pela outra por colisão (parâmetros $C_n$ e $C_m$, tabela 1) variou entre simulações. Os demais parâmetros populacionais foram iguais: $\beta =$ `r format(0.7/365.25,scientific = TRUE,digits = 4)`, $\delta =$ `r format(0.69/365.25,scientific = TRUE,digits = 4)`, $\gamma =$ `r format(2*(0.7/365.25-0.69/365.25)/50,scientific = TRUE,digits = 4)`. Os parâmetros de competição interespecífica ($C_n$ e $C_m$) variam entre $\gamma/2$ e $\gamma$, tal que a assimetria competitiva, definido por $2(C_n - C_m)/ \gamma$, variou entre -1 e 1 (figura 1). O tamanho inicial da espécie invasora variou entre 1% e 100% da capacidade de suporte K = 50 indivíduos (Figura 1). Foram simulados 11 cenários de tamanho inicial da invasora e 11 cenários de assimetria competitiva, totalizando 121 cenários, cada um com 100 réplicas.</p> 
 
     
-```{r graficos dos cenarios simulados, echo=FALSE,eval=TRUE}
-df_sim0 <- read_csv("csv/df_sim0.csv")
+```{r graficos dos cenarios simulados, echo=FALSE,eval=TRUE,fig.width=8,fig.height=4}
+df_sim0 <- read_csv("csv/df_sim0.csv") |> 
+  select(-path)
 # gráficos
-df_sim0 |> 
+l_p <- list()
+## cenários simluados
+l_p[[1]] <- df_sim0 |> 
   mutate(M0_plot = M0/50) |> 
   ggplot(aes(x=M0_plot,y=C_nm)) + 
   geom_hline(yintercept = 0,color="red",alpha=0.4) +
   geom_point() +
-  labs(title = "Cenários Simulados",
-       x="initial abundance m (%K = 50)",y=expression(C[n] - C[m]*"(%)"),
+  labs(title = "a) Cenários Simulados",
+       x="initial abundance m (%K = 50)",y=expression((C[n] - C[m])*2/gamma),
        subtitle = "n = resident specie, m = invader specie") +
   theme_bw()
+## isolinhas das espécies no espaço de fase definido por elas
+df_plot <- df_sim0 |> filter(C_nm %in% c(1,0,-1) & M0==2) |>  select(-M0)
+# C_n = df_plot$C_n[3]
+# C_m = df_plot$C_n[1]
+# x=0
+# equação 4a
+f_IsoResidente <- function(x,C_n) (df_plot$beta[1] - df_plot$delta[1]) / C_n - x * df_plot$gamma[1]/(2*C_n)
+f_IsoInvasora <- function(x,C_m) 2*(df_plot$beta[1] - df_plot$delta[1])/df_plot$gamma[1] - 2*C_m*x/df_plot$gamma[1]
+# curve(f_IsoResidente(x,C_n=df_plot$C_n[1]),from = 0,to = 50)
+df_plot <- left_join(x=data.frame(x=rep(0:50,3),id = rep(c(1,6,11),each=51)),
+                      y=df_sim0 |> filter(C_nm %in% c(1,0,-1) & M0==2) |>  select(-M0),
+                      by="id") |> 
+  select(-id,-k) |> 
+  mutate(iso_Residente = f_IsoResidente(x=x,C_n=C_n),
+         iso_Invasora = f_IsoInvasora(x=x,C_m=C_m))
+l_p[[2]] <- df_plot |> 
+  pivot_longer(cols = c("iso_Residente", "iso_Invasora"),
+               names_to = "species",
+               values_to = "N") |> 
+  mutate(C_nm = factor(C_nm,levels = c(1,0,-1))) |> 
+  ggplot(aes(x=x,y=N,color=species)) +
+  geom_line(alpha=0.5) + 
+  ylim(0,50) + 
+  xlim(0,50) +
+  coord_cartesian(expand = FALSE) +
+  scale_color_manual(labels = c("residente", "Invasora"), 
+                     values = c("blue", "red")) +
+  labs(x="residente",y="invasora",color="",title="b) Isolinhas Campo Médio") +
+  theme_bw() + theme(legend.position="right") +
+  facet_wrap(~C_nm,ncol=1)
+grid.arrange(grobs=l_p,ncol=2,layout_matrix=matrix(c(1,1,1,2,2),nrow=1))
 ```
   
 __Figura 1__ Cenários simulados de competição interespecífica.  Eixo y: assimetria competitiva -  a diferença no parâmetro C da espécie residente pela invasora, dividido pelo parâmetro $\gamma$. Eixo x: tamanhos iniciais da espécie invasora de 1% até 100%.
@@ -244,17 +286,16 @@ Pois, quanto menor o tamanho populacional maior a chance de uma sequência de ev
 
 ```{r desenho expercimental invasão, eval=FALSE,echo=FALSE}
 # dados completo
-k=50
 df_sim0 <- data.frame(k = 50, beta = 0.7/365.25, delta = 0.69/365.25) |> 
-  mutate(gamma = 2* (beta - delta) / k)
+  mutate(gamma = 2 * (beta - delta) / k)
 df_sim0 <- cbind(df_sim0,
                  expand.grid(M0 = floor(df_sim0$k * c(0.05,seq(0.1,1,by=0.1))),
-                             C_n = df_sim0$gamma * seq(1,2,length.out=6))) |> 
-  mutate(C_m = gamma)
-df_sim0 <- rbind(filter(df_sim0,C_n!=df_sim0$gamma[1]),
+                             C_n = (df_sim0$gamma/2) * seq(1,2,length.out=6))) |> 
+  mutate(C_m = gamma/2)
+df_sim0 <- rbind(filter(df_sim0,C_n!=(df_sim0$gamma[1]/2)),
                  mutate(df_sim0,
-                        C_m=C_n,C_n=gamma)) |> 
-  mutate(C_nm = (C_n - C_m)/gamma) %>% 
+                        C_m=C_n,C_n=gamma/2)) |> 
+  mutate(C_nm = ((C_n - C_m)*2)/gamma) %>% 
   arrange(M0,C_nm) %>% 
   mutate(id = 1:n(),
          path = paste0("csv/md_Estocastico/id_",id,".csv"))
