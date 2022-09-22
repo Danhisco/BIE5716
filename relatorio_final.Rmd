@@ -8,7 +8,7 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE,message = FALSE,warning = FALSE,cache = FALSE)
+knitr::opts_chunk$set(echo = FALSE,message = FALSE,warning = FALSE,cache = TRUE)
 ```
 
 ```{r pacotes, include=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE}
@@ -20,6 +20,7 @@ library(MuMIn)
 library(AICcmodavg)
 library(boot)
 library(DHARMa)
+library(lme4)
 library(gridExtra)
 library(deSolve)
 library(doMC)
@@ -645,7 +646,7 @@ __Figura A4__ Conjunto de dados completo do Tempo estimado de extinção na aus�
 
 __Tabela A6__ Tabela seleção do modelo referência para descrever o log(Tempo de Extinção).  
 
-```{r ajuste modelo cheio lm TE 1sp}
+```{r ajuste modelo cheio lm TE 1sp 1 }
 # dados
 df_1sp <- read_csv(file="resultados/df_TE1sp.csv") |> 
   filter(M0<=100 & M0>1) |> 
@@ -661,7 +662,7 @@ names(l_md) <- c("M0^2","M0","log(M0)^2","log(M0)","1")
 AICctab(l_md,weights=TRUE)
 ```
 
-```{r graficos diagnostico do LM referencia TE 1sp,include=TRUE,eval=TRUE}
+```{r graficos diagnostico do LM referencia TE 1sp 1 ,include=TRUE,eval=TRUE}
 res.Dharma <- DHARMa::simulateResiduals(l_md[["log(M0)^2"]],n = 250,refit = FALSE)
 plot(res.Dharma)
 ```
@@ -671,11 +672,11 @@ __Figura A5__ Resíduos Quantílicos LM referência para descrever o tempo de ex
 
 __tabela A6__ Sumário do modelo 2: LM referência polinômio de segundo grau
 
-```{r sumário do LM referencia do tempo de extincao na ausencia da residente}
+```{r sumário do LM referencia do tempo de extincao na ausencia da residente 1 }
 summary(l_md[["log(M0)^2"]])
 ```
 
-```{r graficos diagnostico padrao}
+```{r graficos diagnostico padrao log lm TE 1sp}
 par(mfrow=c(2,2))
 plot(l_md[["log(M0)^2"]])
 ```
@@ -684,7 +685,7 @@ plot(l_md[["log(M0)^2"]])
 ###### Modelo Médio
 
 
-```{r lm TE 1sp modelo medio}
+```{r lm log(TE) logM0 1sp modelo medio}
 # dados
 df_1sp <- read_csv(file="resultados/df_TE1sp.csv") |> 
   filter(M0<=100 & M0>1) |> 
@@ -716,11 +717,11 @@ ggplot(df_md,aes(x=log_TE,y=log_TE_predict)) +
 ```
 
 
-##### Ajuste modelo cheio GLM Gamma(log) TE 1sp
+###### Ajuste modelo cheio GLM Gamma(log) TE 1sp
 
 __Tabela A7__ GLM Gamma(log): Tabela seleção do modelo referência para descrever o log(Tempo de Extinção).  
 
-```{r ajuste modelo cheio lm TE 1sp}
+```{r ajuste modelo cheio GLM Gamma(log) TE 1sp,eval=TRUE,echo=FALSE}
 # dados
 df_1sp <- read_csv(file="resultados/df_TE1sp.csv") |> 
   filter(M0<=60 & M0>1) |> 
@@ -738,7 +739,7 @@ names(l_md) <- c("M0^2","M0","log(M0)^2","log(M0)","1","N:M0^2","N:log(M0)^2")
 AICctab(l_md,weights=TRUE)
 ```
 
-```{r graficos diagnostico do LM referencia TE 1sp,include=TRUE,eval=TRUE}
+```{r graficos diagnostico do GLM Gamma(log) referencia TE 1sp,include=TRUE,eval=TRUE}
 res.Dharma <- DHARMa::simulateResiduals(l_md[["log(M0)^2"]],n = 250,refit = FALSE)
 plot(res.Dharma)
 ```
@@ -748,20 +749,24 @@ __Figura A5__ Resíduos Quantílicos LM referência para descrever o tempo de ex
 
 __tabela A6__ Sumário do modelo 2: LM referência polinômio de segundo grau
 
-```{r sumário do LM referencia do tempo de extincao na ausencia da residente}
+```{r sumário A6 do LM referencia do tempo de extincao na ausencia da residente}
 summary(l_md[["log(M0)^2"]])
 ```
 
-```{r graficos diagnostico padrao}
+```{r graficos diagnostico padrao lm TE 1sp}
 par(mfrow=c(2,2))
 plot(l_md[["log(M0)^2"]])
 ```
 
+  
+__Figura A6__ gráficos diagnostico do lm: log(TE) ~ log(M0)^2  
+  
+    
 
-###### Modelo Médio
+##### Modelo Médio
 
 
-```{r lm TE 1sp modelo medio}
+```{r lm log(TE) 1sp modelo medio}
 # dados
 df_1sp <- read_csv(file="resultados/df_TE1sp.csv") |> 
   filter(M0<=100 & M0>1) |> 
@@ -792,8 +797,11 @@ ggplot(df_md,aes(x=TE,y=TE_predict)) +
 ```
   
     
-###### Predição final Modelo Médio LM: log(TE) ~ log(M0)^2  
-
+__Figura A7__  predito e observado pelo modelo médio: lm - log(TE) ~ log(M0)^2  
+  
+    
+##### Predição final Modelo Médio LM: log(TE) ~ log(M0)^2  
+  
 ```{r LM TE 1 sp - modelo medio para novo conjunto de dados,echo=FALSE,eval=FALSE}
 # dados
 df_1sp <- read_csv(file="resultados/df_TE1sp.csv") |> 
@@ -817,7 +825,7 @@ df_AICcmodavg_TE1sp <- df_AICcmodavg_TE1sp |>
          TE_upper = exp(upper.CL))
 write_csv(df_AICcmodavg_TE1sp, file="resultados/df_AICcmodavg_TE1sp.csv")
 ```
-```{r LM TE 1 sp - graficos exploratorios modelo medio}
+```{r LM TE 1 sp - graficos exploratorios modelo medio,eval=TRUE,echo=FALSE,fig.width=8,fig.height=4}
 df_AICcmodavg_TE1sp <- read_csv("resultados/df_AICcmodavg_TE1sp.csv")
 l_p <- list()
 l_p[[1]] <- df_AICcmodavg_TE1sp |> 
@@ -838,6 +846,92 @@ l_p[[2]] <- df_AICcmodavg_TE1sp |>
   facet_wrap(~label)
 grid.arrange(grobs=l_p,ncol=2,top="Tempo de extinção observado e predito pelo modelo médio - LM:log(TE) ~ log(M0)^2")    
 ```
+  
+    
+__Figura A8__   Predito pelo modelo médio (lm: log(TE) ~ log(M0)) e o observado na escala log(TE) e na escala padrão TE. Em vermelho a média e em azul o intervalo de confiança computado pressupondo normalidade assintótica (REF Modavgpred)
 
-      
+  
+##### Tempo de extinção na presença da residente
+  
+```{r graficos exploratorios TEI 2spp,echo=FALSE}
+df_2sp <- read_csv(file="resultados/df_TEI2spp.csv") |> 
+  mutate(log_TE = log(TE_m), log_M0 = log(M0)) |> 
+  dplyr::rename(TE = TE_m)
+l_p <- list()
+l_p[[1]] <- df_2sp |> 
+  pivot_longer(cols=c("TE","log_TE"),names_to = "variaveis",values_to = "valores") |> 
+  ggplot(aes(x=,y=valores)) +
+  geom_density() +
+  facet_wrap(~variaveis,scales="free") +
+  coord_flip()
+l_p[[2]] <- df_2sp |> 
+  mutate(label = "escala log") |> 
+  ggplot(aes(x=C_nm,y=log_TE)) +
+  geom_point() +
+  geom_smooth(method = "loess",formula = "y~x") +
+  facet_wrap(~label)
+l_p[[3]] <- df_2sp |> 
+  mutate(label = "escala padrão") |> 
+  ggplot(aes(x=M0,y=TE)) +
+  geom_point() +
+  geom_smooth(method = "loess",formula = "y~x") +
+  facet_wrap(~label)
+l_p[[4]] <- df_2sp |> 
+  mutate(label = "escala log") |> 
+  ggplot(aes(x=M0,y=log_TE)) +
+  geom_point() +
+  geom_smooth(method = "loess",formula = "y~x") +
+  facet_wrap(~label)
+grid.arrange(grobs=l_p,ncol=2,top="Tempo de Extinção total: sucesso e fracasso na substituição da espécie residente")
+```
+  
+__Figura A9__ Gráficos exploratórios do Tempo de Extinção total: quando a substituição foi um sucesso ou fracasso    
+
+__Tabela A7__ Seleção do modelo cheio para descrever o tempo de extinção total.  
+  
+  
+```{r ajuste modelo cheio lm TEI 2spp 1 }
+# dados
+df_2sp <- read_csv(file="resultados/df_TEI2spp.csv") |> 
+  mutate(log_TE = log(TE_m), log_M0 = log(M0))
+f_z <- function(x){
+  m <- base::mean(x,na.rm=FALSE)
+  sd <- sd(x,na.rm=FALSE)
+  output <- (x-m)/sd
+  return(output)
+} 
+df_2sp$M0.z <- f_z(df_2sp$M0)
+df_2sp$log_M0.z <- f_z(df_2sp$log_M0)
+df_2sp$C_nm.z <- f_z(df_2sp$C_nm)
+# modelos
+l_md <- list()
+l_md[[1]] <- lmer(log_TE ~ (C_nm.z + I(C_nm.z^2))*(M0.z + I(M0.z^2)) + (1|id),data = df_2sp)
+l_md[[2]] <- lmer(log_TE ~ (C_nm.z + I(C_nm.z^2))+(M0.z + I(M0.z^2)) + (1|id),data = df_2sp)
+l_md[[3]] <- lmer(log_TE ~ (M0.z + I(M0.z^2)) + (1|id),data = df_2sp)
+l_md[[4]] <- lmer(log_TE ~ (C_nm.z + I(C_nm.z^2))*(log_M0.z + I(log_M0.z^2)) + (1|id),data = df_2sp)
+l_md[[5]] <- lmer(log_TE ~ (C_nm.z + I(C_nm.z^2))+(log_M0.z + I(log_M0.z^2)) + (1|id),data = df_2sp)
+l_md[[6]] <- lmer(log_TE ~ (log_M0.z + I(log_M0.z^2)) + (1|id),data = df_2sp)
+l_md[[7]] <- lmer(log_TE ~ (C_nm.z + I(C_nm.z^2)) + (1|id),data = df_2sp)
+l_md[[8]] <- lmer(log_TE ~ 1 + (1|id),data = df_2sp)
+names(l_md) <- c("C_nm^2 * M0^2","C_nm^2 + M0^2","M0^2",
+                 "C_nm^2 * log(M0)^2","C_nm^2 + log(M0)^2","log(M0)^2",
+                 "C_nm^2","1")
+AICctab(l_md,weights=TRUE)
+```
+
+```{r residuos quantilicos lmer TEI 2spp}
+res.Dharma <- DHARMa::simulateResiduals(l_md[["C_nm^2 + log(M0)^2"]],n = 250,refit = FALSE)
+plot(res.Dharma)
+```
+
+__Figura A10__ Resíduos quantílicos lmer TEI 2spp cheio: C_nm^2 + log(M0)^2
+
+
+__Tabela A8__ sumário do lmer TEI 2spp cheio mais plausível: C_nm^2 + log(M0)^2  
+  
+```{r tabela A8}
+summary(l_md[["C_nm^2 + log(M0)^2"]])
+```
+
+
 
