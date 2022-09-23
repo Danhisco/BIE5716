@@ -151,7 +151,7 @@ readr::write_csv(df_dinamica,file = path_csv)
 ```
   
 
-## Cenários explorados de assimetria competitiva e tamanho inicial da invasora
+## Cenários de assimetria competitiva e tamanho inicial da invasora
   
 <p>Apenas o parâmetro que descreve a probabilidade de exclusão de uma espécie pela outra por colisão (parâmetros $C_n$ e $C_m$, tabela 1) variou entre simulações. Os demais parâmetros populacionais foram iguais: $\beta =$ `r format(0.7/365.25,scientific = TRUE,digits = 4)`, $\delta =$ `r format(0.69/365.25,scientific = TRUE,digits = 4)`, $\gamma =$ `r format(2*(0.7/365.25-0.69/365.25)/50,scientific = TRUE,digits = 4)`. Os parâmetros de competição interespecífica ($C_n$ e $C_m$) variam entre $\gamma/4$ e $\gamma/2$, tal que a assimetria competitiva, definido por $2(C_n - C_m)/ \gamma$, variou entre -0.5 e 0.5 (figura 1). O tamanho inicial da espécie invasora variou entre 1% e 100% da capacidade de suporte K = 50 indivíduos (Figura 1a). Foram simulados 11 cenários de tamanho inicial da invasora e 11 cenários de assimetria competitiva, totalizando 121 cenários, cada um com 100 réplicas. Quando a assimetria é nula então o sistema é indeterminado; se ela for maior do que zero então, dado tempo suficiente, a espécie invasora irá dominar o sistema; se a assimetria é negativa, então a residente dominará o sistema (Figura 1b) </p> 
 
