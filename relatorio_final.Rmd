@@ -4,7 +4,7 @@ author: "Danilo Pereira Mori"
 date: "2022-08-20"
 output: html_document
 editor_options: 
-  chunk_output_type: inline
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -378,33 +378,57 @@ plyr::a_ply(df_sim2,1,
     
       
 ```{r análises preparatórias 1 - df_resultados e df_replicas, eval=FALSE, echo=FALSE, include=FALSE}
+df_sim <- read_csv("csv/df_sim0.csv") |> 
+  # remover na versão final
+  mutate(path_original = path,
+         path = gsub("md_Estocastico","md_Estocastico_ATUAL",path_original))
+# X <- df_sim[74,]
 f_resultados <- function(X){
+  df <- read_csv(X$path)
   read_csv(X$path) |>
     group_by(.n) |>
     slice_tail(n=1) |> 
-    mutate(invasion=ifelse(m!=0,1,0))
+    mutate(invasion=ifelse(m==0 & n==0,1,0))
 }
-
 registerDoMC(3)
-df_rep.tFinal <- adply(df_sim0,1,f_resultados,.parallel = TRUE)
-df_resultados <- df_rep.tFinal |> 
+df_rep.tFinal <- adply(df_sim[1:74,],1,f_resultados,.parallel = TRUE)
+df_rep.tFinal |> filter(invasion==1 & M0==2 & C_nm==-0.5)
+
+######
+df_tFinal <- df_rep.tFinal |> 
   group_by(id) |>
   summarise(c_invasion = sum(invasion),
             t_mean = mean(t),
             t_var = var(t),
             t_max = max(t),
             n_mean = mean(n),
-            n_var = var(n),
-            m_mean = mean(m),
-            m_var = var(m)) |> 
+            n_var = var(n)) |> 
   inner_join(distinct(select(df_rep.tFinal,id:M0)),by="id") |> 
-  mutate(C_nm = (C_n - C_m)/df_sim0$gamma[1]) |> 
+  mutate(C_nm = (C_n - C_m)*2/df_sim$gamma[1]) |> 
   arrange(C_nm)
-#
-write_csv(df_rep.tFinal,file = "resultados/df_rep_tFinal.csv")
-write_csv(df_resultados,file = "resultados/df_resultados.csv")
-```
+write_csv(df_tFinal,file = "resultados/df_tFinal.csv")
+# df_resResidente
+# df <- df_rep.tFinal |> filter(id==1)
+f_TEres <- function(df){
+  df_ab <- read_csv(df$path[1]) |> 
+    filter(.n %in% unique(df$.n[df$invasion==1]))
+  df_ab[df_ab$n==0,] |> group_by(.n) |> slice_head()
+}
+registerDoMC(3)
+df_res0 <- ddply(df_rep.tFinal,"id",f_TEres,.parallel = TRUE)
+df_tParcial <- left_join(rename(df_res0,TE_res=t),
+                         select(filter(df_rep.tFinal,invasion==1),id,.n,M0,C_nm,t),
+                         by=c("id",".n")) |> 
+  mutate(TE_1sp = t - TE_res)
   
+#
+# write_csv(df_rep.tFinal,file = "resultados/df_rep_tFinal.csv")
+# write_csv(df_resultados,file = "resultados/df_resultados.csv")
+```
+
+
+
+<!-- ### Tamanho populacion da residente nos eventos de ausência de     -->
 
 <!-- ### Tempo para Extinção -->
   
