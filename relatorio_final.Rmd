@@ -4,7 +4,7 @@ author: "Danilo Pereira Mori"
 date: "2022-08-20"
 output: html_document
 editor_options: 
-  chunk_output_type: console
+  chunk_output_type: inline
 ---
 
 ```{r setup, include=FALSE}
@@ -235,32 +235,31 @@ __Figura 1__ Cenários simulados de competição interespecífica.  Eixo y: assi
 # Resultados
 
 
-## Como a probabilidade de substituição varia com o tamanho inicial da invasora e a assimetria competitiva?
-
-PLANOS:  
-  
-- gráfico 1 plotar as isolinhas no plano de fase N X M em 3 situações extremas: C_nm = 1,0,-1, paras M0 = k*(0.01,0.25,0.5,0.75,1)  
-  
-- gráfico 2 predito para a Probabilidade de substituição em função de C  
-  
+#### Como a probabilidade de substituição varia com o tamanho inicial da invasora e a assimetria competitiva?
 
   
 ```{r figura 2 Probabilidade de substituicao da residente pela invasora}
 # dados
-df_resultados <- read_csv("resultados/df_resultados.csv")
-load(file="resultados/df_AICcmodavg.csv")
-df_plot <- df_AICcmodavg %>% 
-  mutate(M0 = M0.z * sd(df_resultados$M0) + mean(df_resultados$M0),
-         C_nm = C_nm.z*sd(df_resultados$C_nm) + mean(df_resultados$C_nm))
+df_resultados <- read_csv(file="resultados/df_tFinal.csv")
+df_plot <- read_csv(file="resultados/df_GLMBin_modavg.csv")
 # graficos
 max_fill <- max(c(df_plot$mod.avg.pred,df_resultados$c_invasion/100,
-                  df_plot$lower.CL,df_plot$upper.CL)) + 0.04
+                  df_plot$lower.CL,df_plot$upper.CL)) + min(df_resultados$c_invasion/100)
 l_p <- list()
-l_p[[1]] <- ggplot(df_plot,aes(x=M0,y=C_nm,fill=mod.avg.pred)) +
+v_breaks <- c(as.numeric(round(quantile(df_plot$mod.avg.pred,probs = seq(0.10,0.50,length=5)),digits = 2)),max_fill/2)
+l_p[[1]] <- ggplot(mutate(df_plot,label="Average"),
+                   aes(x=M0,y=C_nm,fill=mod.avg.pred)) +
   geom_tile() +
+  # geom_contour(aes(z=mod.avg.pred),alpha=0.2, colour="black",
+  #              breaks = v_breaks) +
+  # metR::geom_text_contour(aes(z=mod.avg.pred),stroke=0.05,
+  #                         breaks = v_breaks) +
   scale_fill_gradient2(limits = c(0,max_fill),midpoint=max_fill/2, low="red", high="blue",mid="green") +
   labs(title="Prob. replacement",
-       fill="Probability") + theme_classic()
+       fill="Probability") +
+  coord_cartesian(expand = FALSE) +
+  facet_wrap(~label) +
+  theme_classic()
 l_p[[2]] <- ggplot(df_plot,aes(x=M0,y=C_nm,fill=lower.CL)) +
   geom_tile() +
   scale_fill_gradient2(limits = c(0,max_fill),midpoint=max_fill/2, low="red", high="blue",mid="green") +
@@ -378,22 +377,16 @@ plyr::a_ply(df_sim2,1,
     
       
 ```{r análises preparatórias 1 - df_resultados e df_replicas, eval=FALSE, echo=FALSE, include=FALSE}
-df_sim <- read_csv("csv/df_sim0.csv") |> 
-  # remover na versão final
-  mutate(path_original = path,
-         path = gsub("md_Estocastico","md_Estocastico_ATUAL",path_original))
-# X <- df_sim[74,]
+df_sim <- read_csv("csv/df_sim0.csv")
 f_resultados <- function(X){
   df <- read_csv(X$path)
   read_csv(X$path) |>
     group_by(.n) |>
-    slice_tail(n=1) |> 
+    slice_tail(n=1) |>
     mutate(invasion=ifelse(m==0 & n==0,1,0))
 }
 registerDoMC(3)
-df_rep.tFinal <- adply(df_sim[1:74,],1,f_resultados,.parallel = TRUE)
-df_rep.tFinal |> filter(invasion==1 & M0==2 & C_nm==-0.5)
-
+df_rep.tFinal <- adply(df_sim,1,f_resultados,.parallel = TRUE)
 ######
 df_tFinal <- df_rep.tFinal |> 
   group_by(id) |>
@@ -420,10 +413,7 @@ df_tParcial <- left_join(rename(df_res0,TE_res=t),
                          select(filter(df_rep.tFinal,invasion==1),id,.n,M0,C_nm,t),
                          by=c("id",".n")) |> 
   mutate(TE_1sp = t - TE_res)
-  
-#
-# write_csv(df_rep.tFinal,file = "resultados/df_rep_tFinal.csv")
-# write_csv(df_resultados,file = "resultados/df_resultados.csv")
+write_csv(df_tParcial,file = "resultados/df_tParcial.csv")
 ```
 
   
@@ -432,18 +422,19 @@ df_tParcial <- left_join(rename(df_res0,TE_res=t),
 ### Probabilidade de substituição da residente pela invasora
 
 ```{r graf exp prob replace the resident, echo=FALSE,include=TRUE,eval=TRUE}
-df_resultados <- readr::read_csv("resultados/df_resultados.csv")
-df_resultados |> 
+df_resultados <- readr::read_csv("resultados/df_tFinal.csv")
+df_resultados <- df_resultados |> 
   mutate(Prob_invasion = c_invasion/100,
-         propM0 = M0/50) |> 
+         propM0 = M0/50,
+         t_sd=sqrt(t_var))
+df_resultados |> 
   ggplot(aes(x=propM0,y=C_nm,fill=Prob_invasion)) +
   geom_tile() +
   scale_fill_distiller(palette = "Spectral") +
-  labs(fill="",x="M0, initial pop. size of invader (%K)",y="Cn - Cm / gamma") +
+  labs(fill="",x="M0, initial pop. size of invader (%K)",y="(Cn - Cm) 2 / gamma") +
   coord_cartesian(expand = FALSE) +
-  # scale_y_continuous(breaks = seq(0,20,by=4)) +
-  # scale_x_continuous(breaks = seq(0.05,0.95,by=0.10)) +
-  ggtitle("Prob(replace the resident specie)") +
+  geom_text(aes(label=Prob_invasion)) +
+  ggtitle("Proporção de eventos de substituição da residente em 100 réplicas") +
   theme_classic()
 ```
 
@@ -453,13 +444,12 @@ __Figura A1__ Proporção observada de substituições
 O modelo cheio mais plausível é aquele que considera a interação entre os polinômios (Tabela 1). Porêm este modelo não apresenta um excelente ajuste aos dados (Figura SI 1 e sumário do módelo 1). O predito e observado diferem em valores extremos: quando a proporção de substituições é baixa, o predito pode subestimar a probabilidade de substituição (Figura SI 2); quando a proporção é alta, o predito pode superestimar a probabilidade. Para as análises utilizei os pacotes DHARMa (REF), MuMIn (REF) e AICcmodavg (REF).
 
 
-__tabela A1__ seleção de GLMs Binomiais para descrever a probabilidade de substituição
+__tabela A1__ seleção de GLM Binomial Cheio para descrever a probabilidade de substituição
 
 ```{r modelo estatístico para descrever a probabilidade de invasao,echo=FALSE,include=FALSE,eval=TRUE}
-library(plyr)
-library(tidyverse)
 # dados para o modelo estatístico
-df_resultados <- read_csv("resultados/df_resultados.csv")
+df_resultados <- read_csv("resultados/df_tFinal.csv") |> 
+  mutate(log_M0 = log(M0))
 f_z <- function(x){
   m <- base::mean(x,na.rm=FALSE)
   sd <- sd(x,na.rm=FALSE)
@@ -467,6 +457,7 @@ f_z <- function(x){
   return(output)
 } 
 df_resultados$M0.z <- f_z(df_resultados$M0)
+df_resultados$log_M0.z <- f_z(df_resultados$log_M0)
 df_resultados$C_nm.z <- f_z(df_resultados$C_nm)
 # glm binomial
 l_md <- list()
@@ -480,14 +471,19 @@ l_md[[4]] <- glm(cbind(c_invasion,100-c_invasion) ~ (M0.z + I(M0.z^2)),
                  family = "binomial",data=df_resultados)
 l_md[[5]] <- glm(cbind(c_invasion,100-c_invasion) ~ 1,
                  family = "binomial",data=df_resultados)
-names(l_md) <- c("C_nm^2 * M0^2","C_nm^2 + M0^2","C_nm^2","M0^2","1")
+l_md[[6]] <- glm(cbind(c_invasion,100-c_invasion) ~ (C_nm.z + I(C_nm.z^2))*(log_M0.z + I(log_M0.z^2)),
+                 family = "binomial",data=df_resultados)
+l_md[[7]] <- glm(cbind(c_invasion,100-c_invasion) ~ (C_nm.z + I(C_nm.z^2))+(log_M0.z + I(log_M0.z^2)),
+                 family = "binomial",data=df_resultados)
+l_md[[8]] <- glm(cbind(c_invasion,100-c_invasion) ~ (log_M0.z + I(log_M0.z^2)),
+                 family = "binomial",data=df_resultados)
+names(l_md) <- c("C_nm^2 * M0^2","C_nm^2 + M0^2","C_nm^2","M0^2","1","C_nm^2 * log_M0^2","C_nm^2 + log_M0^2","log_M0^2")
 AICctab(l_md,weights=TRUE)
 ```
 
-
  
 ```{r graficos diagnostico do GLM binomial mais plausível,include=TRUE,eval=TRUE}
-res.Dharma <- DHARMa::simulateResiduals(l_md[["C_nm^2 * M0^2"]],n = 250,refit = FALSE)
+res.Dharma <- DHARMa::simulateResiduals(l_md[["C_nm^2 + log_M0^2"]],n = 250,refit = FALSE)
 plot(res.Dharma)
 ```
     
@@ -497,7 +493,7 @@ __Figura A2__ Resíduos Quantílicos GLM Binomial cheio. Resíduos quantílícos
 __tabela A2__ Sumário do modelo 1: GLM Binomial Cheio  
 
 ```{r sumário do GLM binomial cheio}
-summary(l_md[["C_nm^2 * M0^2"]])
+summary(l_md[["C_nm^2 + log_M0^2"]])
 ```
 
     
@@ -505,8 +501,9 @@ summary(l_md[["C_nm^2 * M0^2"]])
   
     
 ```{r construcao do modelo medio GLM Binomial,eval=FALSE,echo=FALSE}
-# dados
-df_resultados <- read_csv("resultados/df_resultados.csv")
+# dados para o modelo estatístico
+df_resultados <- read_csv("resultados/df_tFinal.csv") |> 
+  mutate(log_M0 = log(M0))
 f_z <- function(x){
   m <- base::mean(x,na.rm=FALSE)
   sd <- sd(x,na.rm=FALSE)
@@ -514,28 +511,35 @@ f_z <- function(x){
   return(output)
 } 
 df_resultados$M0.z <- f_z(df_resultados$M0)
+df_resultados$log_M0.z <- f_z(df_resultados$log_M0)
 df_resultados$C_nm.z <- f_z(df_resultados$C_nm)
 # modelo referência
-md_ref <- glm(cbind(c_invasion,100-c_invasion) ~ (C_nm.z + I(C_nm.z^2))*(M0.z + I(M0.z^2)),
+md_ref <- glm(cbind(c_invasion,100-c_invasion) ~ (C_nm.z + I(C_nm.z^2)) + (log_M0.z + I(log_M0.z^2)),
               family = "binomial",data=df_resultados,na.action = "na.fail")
 # todas as combinações do modelo cheio
 registerDoMC(3)
 l_dredge_nInvasions <- llply(dredge(md_ref,trace = FALSE,evaluate=FALSE), eval,.parallel = TRUE)
-# Model Averaging for the observed data
-mdAvg_MuMIn <- model.avg(l_dredge_nInvasions)
 # Model Averaging for new data predictions
-df_pred <- expand.grid(M0.z=seq(min(df_resultados$M0.z),max(df_resultados$M0.z),length=60),
-                       C_nm.z=seq(min(df_resultados$C_nm.z),max(df_resultados$C_nm.z),length=60))
+df_pred <- expand.grid(M0=seq(min(df_resultados$M0),max(df_resultados$M0),length=60),
+                       C_nm.z=seq(min(df_resultados$C_nm.z),max(df_resultados$C_nm.z),length=60)) |> 
+  mutate(log_M0 = log(M0))
+df_pred$log_M0.z <- f_z(df_pred$log_M0)
 # esse demora com esse tanto de pontos
-df_AICcmodavg <- modavgPred(l_dredge_nInvasions,newdata = df_pred) %>%
+df_AICcmodavg <- modavgPred(l_dredge_nInvasions,newdata = df_pred,type="link") %>%
   cbind(df_pred)
-save(df_AICcmodavg, file="resultados/df_AICcmodavg.csv")
+df_GLMBin_modavg <- df_AICcmodavg |> 
+  select(mod.avg.pred,lower.CL,upper.CL,C_nm.z) |> 
+  mutate(C_nm = C_nm.z*sd(df_resultados$C_nm) + mean(df_resultados$C_nm),
+         across(mod.avg.pred:upper.CL,arm::invlogit))
+df_GLMBin_modavg$M0 <- df_AICcmodavg$M0
+write_csv(df_GLMBin_modavg, file="resultados/df_GLMBin_modavg.csv")
 ```
   
     
 ```{r glm binomial observado e predito modelo medio, echo=F, comment=FALSE, message=FALSE,warning=FALSE,results="hide"}
 # dados
-df_resultados <- read_csv("resultados/df_resultados.csv")
+df_resultados <- read_csv("resultados/df_tFinal.csv") |> 
+  mutate(log_M0 = log(M0))
 f_z <- function(x){
   m <- base::mean(x,na.rm=FALSE)
   sd <- sd(x,na.rm=FALSE)
@@ -543,11 +547,11 @@ f_z <- function(x){
   return(output)
 } 
 df_resultados$M0.z <- f_z(df_resultados$M0)
+df_resultados$log_M0.z <- f_z(df_resultados$log_M0)
 df_resultados$C_nm.z <- f_z(df_resultados$C_nm)
 # modelo referência
-md_ref <- glm(cbind(c_invasion,100-c_invasion) ~ (C_nm.z + I(C_nm.z^2))*(M0.z + I(M0.z^2)),
+md_ref <- glm(cbind(c_invasion,100-c_invasion) ~ (C_nm.z + I(C_nm.z^2)) + (log_M0.z + I(log_M0.z^2)),
               family = "binomial",data=df_resultados,na.action = "na.fail")
-## ajustes
 # todas as combinações do modelo cheio
 registerDoMC(3)
 l_dredge_nInvasions <- llply(dredge(md_ref,trace = FALSE,evaluate=FALSE), eval,.parallel = TRUE)
@@ -577,8 +581,12 @@ __Figura A3__ predito pelo modelo médio e observado.
 #### Tempo para extinção na ausência de competidora
 
 ```{r analise dos dados de tempo de extincao conjunto completo, fig.height=5,fig.width=8}
-df_1sp <- read_csv(file="resultados/df_TE1sp.csv") |> 
-  mutate(log_TE = log(TE), log_M0 = log(M0))
+df_1sp <- read_csv(file="resultados/df_tParcial.csv") |> 
+  select(-M0,-(id:n),-(TE_res:t)) |> 
+  rename(M0 = m) |> 
+  mutate(TE = TE_1sp/365.25,
+         log_TE = log(TE),
+         log_M0 = log(M0))
 l_p <- list()
 l_p[[1]] <- df_1sp |> 
   pivot_longer(cols=c("TE","log_TE"),names_to = "variaveis",values_to = "valores") |> 
@@ -606,10 +614,8 @@ l_p[[4]] <- df_1sp |>
   facet_wrap(~label)
 grid.arrange(grobs=l_p,ncol=2,top="Conjunto Completo")
 ```
-```{r analise dos dados de tempo de extincao conjunto M0 menor do que 60, fig.height=5,fig.width=8}
-df_1sp <- read_csv(file="resultados/df_TE1sp.csv") |> 
-  filter(M0<=60 & M0>1) |> 
-  mutate(log_TE = log(TE), log_M0 = log(M0))
+```{r analise dos dados de tempo de extincao conjunto M0 menor ou igual 50, fig.height=5,fig.width=8}
+df_1sp <- df_1sp |> filter(M0<=50 & M0>1)
 l_p <- list()
 l_p[[1]] <- df_1sp |> 
   pivot_longer(cols=c("TE","log_TE"),names_to = "variaveis",values_to = "valores") |> 
@@ -635,7 +641,7 @@ l_p[[4]] <- df_1sp |>
   geom_point() +
   geom_smooth(method = "loess",formula = "y~x") +
   facet_wrap(~label)
-grid.arrange(grobs=l_p,ncol=2,top="Conjunto Parcial: 60 >= tamanho inicial > 1")
+grid.arrange(grobs=l_p,ncol=2,top="Conjunto Parcial: 50 >= tamanho inicial > 1")
 ```
 
 __Figura A4__ Conjunto de dados completo do Tempo estimado de extinção na ausência da competidora 
@@ -644,19 +650,18 @@ __Figura A4__ Conjunto de dados completo do Tempo estimado de extinção na aus�
 
 __Tabela A6__ Tabela seleção do modelo referência para descrever o log(Tempo de Extinção).  
 
+
 ```{r ajuste modelo cheio lm TE 1sp 1 }
-# dados
-df_1sp <- read_csv(file="resultados/df_TE1sp.csv") |> 
-  filter(M0<=100 & M0>1) |> 
-  mutate(log_TE = log(TE), log_M0 = log(M0))
 # modelos
 l_md <- list()
-l_md[[1]] <- lm(log_TE ~ M0 + I(M0^2),data = df_1sp)
-l_md[[2]] <- lm(log_TE ~ M0,data = df_1sp)
-l_md[[3]] <- lm(log_TE ~ log_M0 + I(log_M0^2),data = df_1sp)
-l_md[[4]] <- lm(log_TE ~ log_M0,data = df_1sp)
-l_md[[5]] <- lm(log_TE ~ 1,data = df_1sp)
-names(l_md) <- c("M0^2","M0","log(M0)^2","log(M0)","1")
+l_md[[1]] <- glm(TE ~ M0 + I(M0^2) + I(M0^3),data = df_1sp,Gamma(log))
+l_md[[2]] <- glm(TE ~ M0 + I(M0^2),data = df_1sp,Gamma(log))
+l_md[[3]] <- glm(TE ~ M0,data = df_1sp,Gamma(log))
+l_md[[4]] <- glm(TE ~ log_M0 + I(log_M0^2) + I(log_M0^3),data = df_1sp,Gamma(log))
+l_md[[5]] <- glm(TE ~ log_M0 + I(log_M0^2),data = df_1sp,Gamma(log))
+l_md[[6]] <- glm(TE ~ log_M0,data = df_1sp,Gamma(log))
+l_md[[7]] <- glm(TE ~ 1,data = df_1sp,Gamma(log))
+names(l_md) <- c("M0^3","M0^2","M0","log(M0)^3","log(M0)^2","log(M0)","1")
 AICctab(l_md,weights=TRUE)
 ```
 
@@ -672,6 +677,8 @@ __tabela A6__ Sumário do modelo 2: LM referência polinômio de segundo grau
 
 ```{r sumário do LM referencia do tempo de extincao na ausencia da residente 1 }
 summary(l_md[["log(M0)^2"]])
+print("MASS::gamma.shape return:")
+MASS::gamma.shape(l_md[["log(M0)^2"]])
 ```
 
 ```{r graficos diagnostico padrao log lm TE 1sp}
@@ -683,14 +690,9 @@ plot(l_md[["log(M0)^2"]])
 ###### Modelo Médio
 
 
-```{r lm log(TE) logM0 1sp modelo medio}
-# dados
-df_1sp <- read_csv(file="resultados/df_TE1sp.csv") |> 
-  filter(M0<=100 & M0>1) |> 
-  mutate(log_TE = log(TE), log_M0 = log(M0))
+```{r lm log(TE) logM0 1sp modelo medio MUMIN,include=FALSE}
 # modelo referência
-md_ref <- lm(log_TE ~ log_M0 + I(log_M0^2),
-             data = df_1sp, na.action = "na.fail")
+md_ref <- glm(TE ~ log_M0 + I(log_M0^2),data = df_1sp, na.action = "na.fail",Gamma(log))
 # todas as combinações do modelo cheio
 registerDoMC(3)
 l_dredge_nInvasions <- llply(dredge(md_ref,trace = FALSE,evaluate=FALSE), eval,.parallel = TRUE)
@@ -699,8 +701,7 @@ mdAvg_MuMIn <- model.avg(l_dredge_nInvasions)
 # Model Averaging for new data predictions
 # Predição
 df_md <- df_1sp
-# interval = 'confidence' ainda não é usado, apenas para uma avaliação visual
-df_md$log_TE_predict <- predict(mdAvg_MuMIn,type="response")
+df_md$log_TE_predict <- predict(mdAvg_MuMIn,type="link")
 # Gráfico
 colors <- c("loess" = "blue", "1 : 1" = "black")
 ggplot(df_md,aes(x=log_TE,y=log_TE_predict)) +
@@ -715,139 +716,46 @@ ggplot(df_md,aes(x=log_TE,y=log_TE_predict)) +
 ```
 
 
-###### Ajuste modelo cheio GLM Gamma(log) TE 1sp
 
-__Tabela A7__ GLM Gamma(log): Tabela seleção do modelo referência para descrever o log(Tempo de Extinção).  
-
-```{r ajuste modelo cheio GLM Gamma(log) TE 1sp,eval=TRUE,echo=FALSE}
-# dados
-df_1sp <- read_csv(file="resultados/df_TE1sp.csv") |> 
-  filter(M0<=60 & M0>1) |> 
-  mutate(log_TE = log(TE), log_M0 = log(M0))
-# modelos
-l_md <- list()
-l_md[[1]] <- glm(log_TE ~ M0 + I(M0^2),data = df_1sp,Gamma(log))
-l_md[[2]] <- glm(log_TE ~ M0,data = df_1sp,Gamma(log))
-l_md[[3]] <- glm(log_TE ~ log_M0 + I(log_M0^2),data = df_1sp,Gamma(log))
-l_md[[4]] <- glm(log_TE ~ log_M0,data = df_1sp,Gamma(log))
-l_md[[5]] <- glm(log_TE ~ 1,data = df_1sp,Gamma(log))
-l_md[[6]] <- lm(log_TE ~ M0 + I(M0^2),data = df_1sp)
-l_md[[7]] <- lm(log_TE ~ log_M0 + I(log_M0^2),data = df_1sp)
-names(l_md) <- c("M0^2","M0","log(M0)^2","log(M0)","1","N:M0^2","N:log(M0)^2")
-AICctab(l_md,weights=TRUE)
-```
-
-```{r graficos diagnostico do GLM Gamma(log) referencia TE 1sp,include=TRUE,eval=TRUE}
-res.Dharma <- DHARMa::simulateResiduals(l_md[["log(M0)^2"]],n = 250,refit = FALSE)
-plot(res.Dharma)
-```
-    
-__Figura A5__ Resíduos Quantílicos LM referência para descrever o tempo de extinção na ausência de residente. Resíduos quantílícos obtidos com a função simulateResiduals do pacote DHARMa, com 250 simulações.  
-  
-
-__tabela A6__ Sumário do modelo 2: LM referência polinômio de segundo grau
-
-```{r sumário A6 do LM referencia do tempo de extincao na ausencia da residente}
-summary(l_md[["log(M0)^2"]])
-```
-
-```{r graficos diagnostico padrao lm TE 1sp}
-par(mfrow=c(2,2))
-plot(l_md[["log(M0)^2"]])
-```
-
-  
-__Figura A6__ gráficos diagnostico do lm: log(TE) ~ log(M0)^2  
-  
-    
-
-##### Modelo Médio
-
-
-```{r lm log(TE) 1sp modelo medio}
-# dados
-df_1sp <- read_csv(file="resultados/df_TE1sp.csv") |> 
-  filter(M0<=100 & M0>1) |> 
-  mutate(log_TE = log(TE), log_M0 = log(M0))
+```{r TE single specie, eval=FALSE}
 # modelo referência
-md_ref <- glm(TE ~ log_M0 + I(log_M0^2),data = df_1sp, Gamma(log), na.action = "na.fail")
+md_ref <- glm(TE ~ log_M0 + I(log_M0^2),data = df_1sp, na.action = "na.fail",Gamma(log))
 # todas as combinações do modelo cheio
 registerDoMC(3)
 l_dredge_nInvasions <- llply(dredge(md_ref,trace = FALSE,evaluate=FALSE), eval,.parallel = TRUE)
-# Model Averaging for the observed data
-mdAvg_MuMIn <- model.avg(l_dredge_nInvasions)
-# Model Averaging for new data predictions
-# Predição
-df_md <- df_1sp
-# interval = 'confidence' ainda não é usado, apenas para uma avaliação visual
-df_md$TE_predict <- predict(mdAvg_MuMIn,type="response")
-# Gráfico
-colors <- c("loess" = "blue", "1 : 1" = "black")
-ggplot(df_md,aes(x=TE,y=TE_predict)) +
-  geom_point(alpha=0.3) + 
-  geom_smooth(aes(color="loess"),method = "loess",formula = "y~x",se=FALSE) +
-  geom_abline(aes(color="1 : 1"),slope=1,intercept = 0,size=2) +
-  labs(x="observado",
-       y="predito",
-       title="Gamma(log)[TE ~ log(M0)^2] Predito pelo modelo médio X Observado",
-       color = "") +
-  scale_color_manual(values = colors)
+# model averaging prediction
+v_gamma.shape = MASS::gamma.dispersion(md_ref)
+df_AICcmodavg <- modavgPred(l_dredge_nInvasions,newdata = df_1sp,type="link",gamdisp=v_gamma.shape) %>%
+  cbind(df_1sp) |> 
+  select(TE,log_TE,M0,log_M0,mod.avg.pred,lower.CL,upper.CL) |>
+  mutate(across(mod.avg.pred:upper.CL,exp,.names="{.col}_exp"))
+write_csv(df_AICcmodavg,file = "resultados/df_GLMGamma_modavg_1sp.csv")
 ```
-  
-    
-__Figura A7__  predito e observado pelo modelo médio: lm - log(TE) ~ log(M0)^2  
-  
-    
-##### Predição final Modelo Médio LM: log(TE) ~ log(M0)^2  
-  
-```{r LM TE 1 sp - modelo medio para novo conjunto de dados,echo=FALSE,eval=FALSE}
-# dados
-df_1sp <- read_csv(file="resultados/df_TE1sp.csv") |> 
-  filter(M0<=50 & M0>1) |> 
-  mutate(log_TE = log(TE), log_M0 = log(M0))
-# modelo referência
-md_ref <- lm(log_TE ~ log_M0 + I(log_M0^2),data = df_1sp,na.action = "na.fail")
-# todas as combinações do modelo cheio
-registerDoMC(3)
-l_dredge_nInvasions <- llply(dredge(md_ref,trace = FALSE,evaluate=FALSE), eval,.parallel = TRUE)
-# Model Averaging for new data predictions
-df_pred <- df_1sp
-  # expand.grid(log_M0=seq(min(df_1sp$log_M0),max(df_1sp$log_M0),length=60))
-# esse demora com esse tanto de pontos
-df_AICcmodavg_TE1sp <- modavgPred(l_dredge_nInvasions,newdata = df_pred) %>%
-  cbind(df_pred)
-df_AICcmodavg_TE1sp <- df_AICcmodavg_TE1sp |> 
-  select(mod.avg.pred,lower.CL,upper.CL,M0,TE,log_TE,log_M0) |> 
-  mutate(TE_predict = exp(mod.avg.pred),
-         TE_lower = exp(lower.CL),
-         TE_upper = exp(upper.CL))
-write_csv(df_AICcmodavg_TE1sp, file="resultados/df_AICcmodavg_TE1sp.csv")
-```
-```{r LM TE 1 sp - graficos exploratorios modelo medio,eval=TRUE,echo=FALSE,fig.width=8,fig.height=4}
-df_AICcmodavg_TE1sp <- read_csv("resultados/df_AICcmodavg_TE1sp.csv")
+```{r graficos glm gamma log TE 1sp,echo=FALSE,fig.width=10,fig.height=5}
+df_AICcmodavg <- read_csv("resultados/df_GLMGamma_modavg_1sp.csv")
 l_p <- list()
-l_p[[1]] <- df_AICcmodavg_TE1sp |> 
-  mutate(label = "log(Tempo Extinção)") |> 
-  ggplot(aes(x=M0,y=log_TE)) +
+l_p[[1]] <- df_AICcmodavg |> 
+  mutate(label = "y: escala função de ligação; x: escala preditora do GLM") |> 
+  ggplot(aes(x=log_M0,y=log_TE)) +
   geom_point() +
-  geom_ribbon(aes(ymin=lower.CL,ymax=upper.CL),color="blue") +
-  geom_line(aes(x=M0,y=mod.avg.pred),color="red",size=1,alpha=0.9) +
-  labs(y="") +
+  geom_ribbon(aes(ymin=lower.CL,ymax=upper.CL),alpha=0.5,color="red",fill="red") +
+  geom_line(aes(y=mod.avg.pred)) +
+  labs(y="log(TE)",x="log(M0)") +
   facet_wrap(~label)
-l_p[[2]] <- df_AICcmodavg_TE1sp |> 
-  mutate(label = "Tempo Extinção") |> 
+l_p[[2]] <- df_AICcmodavg |> 
+  mutate(label = "y e x: escala padrão") |> 
   ggplot(aes(x=M0,y=TE)) +
   geom_point() +
-  geom_ribbon(aes(ymin=TE_lower,ymax=TE_upper),color="blue") +
-  geom_line(aes(x=M0,y=TE_predict),color="red",size=1,alpha=0.9) +
-  labs(y="") +
+  geom_ribbon(aes(ymin=lower.CL_exp,ymax=upper.CL_exp),alpha=0.5,color="red",fill="red") +
+  geom_line(aes(y=mod.avg.pred_exp)) +
+  labs(y="TE (anos)",x="M0 (indivíduos)") +
   facet_wrap(~label)
-grid.arrange(grobs=l_p,ncol=2,top="Tempo de extinção observado e predito pelo modelo médio - LM:log(TE) ~ log(M0)^2")    
+grid.arrange(grobs=l_p,ncol=2,top="Observado e Predito pelo GLM Gamma(log)")
 ```
+ 
   
-    
-__Figura A8__   Predito pelo modelo médio (lm: log(TE) ~ log(M0)) e o observado na escala log(TE) e na escala padrão TE. Em vermelho a média e em azul o intervalo de confiança computado pressupondo normalidade assintótica (REF Modavgpred)
-
+__Figura A6__ Observado e predito GLM Gamma(log)
+  
   
 ##### Tempo de extinção na presença da residente
   
