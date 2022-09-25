@@ -387,6 +387,7 @@ f_resultados <- function(X){
 }
 registerDoMC(3)
 df_rep.tFinal <- adply(df_sim,1,f_resultados,.parallel = TRUE)
+write_csv(df_rep.tFinal,file="resultados/df_rep_tFinal.csv")
 ######
 df_tFinal <- df_rep.tFinal |> 
   group_by(id) |>
@@ -582,9 +583,9 @@ __Figura A3__ predito pelo modelo médio e observado.
 
 ```{r analise dos dados de tempo de extincao conjunto completo, fig.height=5,fig.width=8}
 df_1sp <- read_csv(file="resultados/df_tParcial.csv") |> 
-  select(-M0,-(id:n),-(TE_res:t)) |> 
-  rename(M0 = m) |> 
-  mutate(TE = TE_1sp/365.25,
+  dplyr::select(-M0,-(id:n),-(TE_res:t)) |> 
+  dplyr::rename(M0 = m) |> 
+  dplyr::mutate(TE = TE_1sp/365.25,
          log_TE = log(TE),
          log_M0 = log(M0))
 l_p <- list()
@@ -654,14 +655,12 @@ __Tabela A6__ Tabela seleção do modelo referência para descrever o log(Tempo 
 ```{r ajuste modelo cheio lm TE 1sp 1 }
 # modelos
 l_md <- list()
-l_md[[1]] <- glm(TE ~ M0 + I(M0^2) + I(M0^3),data = df_1sp,Gamma(log))
-l_md[[2]] <- glm(TE ~ M0 + I(M0^2),data = df_1sp,Gamma(log))
-l_md[[3]] <- glm(TE ~ M0,data = df_1sp,Gamma(log))
-l_md[[4]] <- glm(TE ~ log_M0 + I(log_M0^2) + I(log_M0^3),data = df_1sp,Gamma(log))
-l_md[[5]] <- glm(TE ~ log_M0 + I(log_M0^2),data = df_1sp,Gamma(log))
-l_md[[6]] <- glm(TE ~ log_M0,data = df_1sp,Gamma(log))
-l_md[[7]] <- glm(TE ~ 1,data = df_1sp,Gamma(log))
-names(l_md) <- c("M0^3","M0^2","M0","log(M0)^3","log(M0)^2","log(M0)","1")
+l_md[[1]] <- glm(TE ~ M0 + I(M0^2),data = df_1sp,Gamma(log))
+l_md[[2]] <- glm(TE ~ M0,data = df_1sp,Gamma(log))
+l_md[[3]] <- glm(TE ~ log_M0 + I(log_M0^2),data = df_1sp,Gamma(log))
+l_md[[4]] <- glm(TE ~ log_M0,data = df_1sp,Gamma(log))
+l_md[[5]] <- glm(TE ~ 1,data = df_1sp,Gamma(log))
+names(l_md) <- c("M0^2","M0","log(M0)^2","log(M0)","1")
 AICctab(l_md,weights=TRUE)
 ```
 
@@ -681,7 +680,7 @@ print("MASS::gamma.shape return:")
 MASS::gamma.shape(l_md[["log(M0)^2"]])
 ```
 
-```{r graficos diagnostico padrao log lm TE 1sp}
+```{r graficos diagnostico padrao log lm TE 1sp,include=FALSE}
 par(mfrow=c(2,2))
 plot(l_md[["log(M0)^2"]])
 ```
@@ -754,15 +753,16 @@ grid.arrange(grobs=l_p,ncol=2,top="Observado e Predito pelo GLM Gamma(log)")
 ```
  
   
-__Figura A6__ Observado e predito GLM Gamma(log)
+__Figura A6__ Observado e predito GLM Gamma(log) modelo médio
   
   
-##### Tempo de extinção na presença da residente
+#### Tempo de extinção na presença da residente
   
 ```{r graficos exploratorios TEI 2spp,echo=FALSE}
-df_2sp <- read_csv(file="resultados/df_TEI2spp.csv") |> 
-  mutate(log_TE = log(TE_m), log_M0 = log(M0)) |> 
-  dplyr::rename(TE = TE_m)
+df_2sp <- read_csv(file="resultados/df_rep_tFinal.csv") |> 
+  select(id,M0,C_nm,t,invasion) |> 
+  mutate(TE = t/365.25,
+         across(c(TE,M0),log,.names="log_{.col}"))
 l_p <- list()
 l_p[[1]] <- df_2sp |> 
   pivot_longer(cols=c("TE","log_TE"),names_to = "variaveis",values_to = "valores") |> 
