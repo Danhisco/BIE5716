@@ -286,6 +286,40 @@ __Figura 2__ Gráfico Exploratório da Probabilidade da espécie invasora substi
 
 ## Como a presença da residente reduz o tempo de extinção da invasora?
 
+```{r figura 3}
+# preparação dos dados
+## df_plot_2spp
+df_plot_2spp <- read_csv("resultados/df_GLMGamma_modavg_2spp.csv") |> 
+  filter(C_nm %in% c(-0.5,0,0.5))
+df_plot_2spp <- left_join(df_plot_2spp,
+                      ddply(df_plot_2spp,"M0",summarise,avg_logTE = mean(log_TE),sd_logTE = sd(log_TE)),
+                      by="M0")
+### df_plot_1spp
+df_plot_1spp <- read_csv("resultados/df_GLMGamma_modavg_1sp.csv") |> 
+  arrange(M0) |> 
+  filter(M0 %in% unique(df_plot_2spp$M0))
+df_plot_1spp <- left_join(df_plot_1spp,
+                          ddply(df_plot_1spp,"M0",summarise,avg_logTE = mean(log_TE),sd_logTE = sd(log_TE)),
+                          by="M0") |> 
+  select(M0,mod.avg.pred:sd_logTE) |> 
+  distinct()
+names(df_plot_1spp)[-1] <- paste0(names(df_plot_1spp)[-1],"_1sp") 
+### df_plot
+df_plot <- left_join(df_plot_2spp,df_plot_1spp,by="M0")
+# gráficos
+df_plot |> 
+  ggplot(aes(x=M0,y=TE)) +
+  geom_point() +
+  geom_ribbon(aes(ymin=lower.CL_exp,ymax=upper.CL_exp),alpha=0.5,color="red",fill="red") +
+  geom_line(aes(y=mod.avg.pred_exp)) +
+  geom_ribbon(aes(ymin=lower.CL_exp_1sp,ymax=upper.CL_exp_1sp),alpha=0.5,color="blue",fill="blue",alpha=0.5) +
+  geom_line(aes(y=mod.avg.pred_exp_1sp),color="blue",alpha=0.5) +
+  labs(y="Tempo Extinção (anos)",x="Tamanho inicial invasora") +
+  facet_wrap(~C_nm,ncol=3)
+```
+
+
+
  # Discussão
 
 
@@ -793,24 +827,6 @@ grid.arrange(grobs=l_p,ncol=2,top="Tempo de Extinção total: sucesso e fracasso
   
 __Figura A9__ Gráficos exploratórios do Tempo de Extinção total: quando a substituição foi um sucesso ou fracasso    
 
-```{r GE TE 2spp 2, include=FALSE}
-l_p <- list()
-l_p[[1]] <- df_2sp |> 
-  filter(C_nm %in% c(-0.5,0,0.5)) |> 
-  ggplot(aes(x=M0,y=TE)) +
-  geom_point() +
-  geom_smooth() +
-  facet_wrap(~C_nm,ncol=3)
-l_p[[2]] <- df_2sp |> 
-  filter(C_nm %in% c(-0.5,0,0.5)) |> 
-  ggplot(aes(x=M0,y=log_TE)) +
-  geom_point() +
-  geom_smooth() +
-  facet_wrap(~C_nm,ncol=3)
-grid.arrange(grobs=l_p,ncol=1)
-```
-
-
 
 __Tabela A7__ Seleção do modelo cheio para descrever o tempo de extinção total.  
   
@@ -900,13 +916,52 @@ df_GLMGamma_modavg_2spp <- df_AICcmodavg |>
   mutate(across(mod.avg.pred:upper.CL,exp,.names="{.col}_exp"))
 write_csv(df_GLMGamma_modavg_2spp,file = "resultados/df_GLMGamma_modavg_2spp.csv")
 ```
+```{r predito e observado df GLMGamma modavg 2spp}
+df_AICcmodavg <- read_csv("resultados/df_GLMGamma_modavg_2spp.csv") |> 
+  filter(C_nm %in% c(-0.5,0,0.5))
+l_p <- list()
+l_p[[1]] <- df_AICcmodavg |> 
+  ggplot(aes(x=log_M0,y=log_TE)) +
+  geom_point() +
+  geom_ribbon(aes(ymin=lower.CL,ymax=upper.CL),alpha=0.5,color="red",fill="red") +
+  geom_line(aes(y=mod.avg.pred)) +
+  labs(y="log(TE)",x="log(M0)") +
+  facet_wrap(~C_nm,ncol=3)
+l_p[[2]] <- df_AICcmodavg |> 
+  mutate(label = "y e x: escala padrão") |> 
+  ggplot(aes(x=M0,y=TE)) +
+  geom_point() +
+  geom_ribbon(aes(ymin=lower.CL_exp,ymax=upper.CL_exp),alpha=0.5,color="red",fill="red") +
+  geom_line(aes(y=mod.avg.pred_exp)) +
+  labs(y="TE (anos)",x="M0 (indivíduos)") +
+  facet_wrap(~C_nm,ncol=3)
+grid.arrange(grobs=l_p,ncol=1,top="Observado e Predito pelo GLM Gamma(log)")
+```
 
 
 
 
 ######## projeto da figura
 
-```{r}
-
+```{r figura 3b}
+# preparação dos dados
+## df_plot_2spp
+df_plot_2spp <- read_csv("resultados/df_GLMGamma_modavg_2spp.csv") |> 
+  filter(C_nm %in% c(-0.5,0,0.5), M0 %in% c(2,25,50)) |> 
+  select(TE:M0,C_nm) |> mutate(C_nm = as.character(C_nm))
+### df_plot_1spp
+df_plot_1spp <- read_csv("resultados/df_GLMGamma_modavg_1sp.csv") |> 
+  arrange(M0) |> 
+  filter(M0 %in% unique(df_plot_2spp$M0)) |> 
+  select(TE:M0) |> mutate(C_nm = "1sp")
+### df_plot
+df_plot <- rbind(df_plot_2spp,df_plot_1spp) |> 
+  mutate(across(M0:C_nm,factor))
+# gráficos
+df_plot |> 
+  ggplot(aes(x=TE)) +
+  geom_histogram(aes(y=..density..), colour="black", fill="white") +
+  geom_density(alpha=.2, fill="#FF6666") +
+  facet_grid(M0~C_nm,scales="free_y")
 ```
 
