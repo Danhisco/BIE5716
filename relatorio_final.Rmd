@@ -794,9 +794,9 @@ __Figura A6__ Observado e predito GLM Gamma(log) modelo médio
   
 ```{r graficos exploratorios TEI 2spp,echo=FALSE}
 df_2sp <- read_csv(file="resultados/df_rep_tFinal.csv") |> 
-  select(id,M0,C_nm,t,invasion) |> 
-  mutate(TE = t/365.25,
-         across(c(TE,M0),log,.names="log_{.col}"))
+  dplyr::select(id,M0,C_nm,t,invasion) |> 
+  dplyr::mutate(TE = t/365.25,
+         dplyr::across(c(TE,M0),log,.names="log_{.col}"))
 l_p <- list()
 l_p[[1]] <- df_2sp |> 
   pivot_longer(cols=c("TE","log_TE"),names_to = "variaveis",values_to = "valores") |> 
@@ -890,17 +890,17 @@ plot(res.Dharma)
 __Figura A10__ Resíduos quantílicos glmer Gamma(log) TEI 2spp cheio: C_nm^2 + log(M0)^2
 
 
-```{r}
+```{r Figura A11 glm GAMMA cheio}
 res.Dharma <- DHARMa::simulateResiduals(l_md[["GLM:: C_nm^2 + log(M0)^2"]],n = 250,refit = FALSE)
 plot(res.Dharma)
 ```
 
-__Figura A10__ Resíduos quantílicos glmer Gamma(log) TEI 2spp cheio: C_nm^2 + log(M0)^2
+__Figura A11__ Resíduos quantílicos glmer Gamma(log) TEI 2spp cheio: C_nm^2 + log(M0)^2
 
 ###### Modelo Médio
 
 
-```{r}
+```{r modelo medio glm gamma 2sp,eval=FALSE}
 # modelo referência
 md_ref <- glm(TE ~ (C_nm.z + I(C_nm.z^2))+(log_M0.z + I(log_M0.z^2)),data = df_2sp, Gamma(log), na.action = "na.fail")
 # todas as combinações do modelo cheio
@@ -916,7 +916,7 @@ df_GLMGamma_modavg_2spp <- df_AICcmodavg |>
   mutate(across(mod.avg.pred:upper.CL,exp,.names="{.col}_exp"))
 write_csv(df_GLMGamma_modavg_2spp,file = "resultados/df_GLMGamma_modavg_2spp.csv")
 ```
-```{r predito e observado df GLMGamma modavg 2spp}
+```{r predito e observado df GLMGamma modavg 2spp´}
 df_AICcmodavg <- read_csv("resultados/df_GLMGamma_modavg_2spp.csv") |> 
   filter(C_nm %in% c(-0.5,0,0.5))
 l_p <- list()
