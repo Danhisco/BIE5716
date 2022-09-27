@@ -8,7 +8,7 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE,message = FALSE,warning = FALSE,cache = TRUE)
+knitr::opts_chunk$set(echo = FALSE,message = FALSE,warning = FALSE,cache = FALSE)
 ```
 
 ```{r pacotes, include=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE}
@@ -102,16 +102,12 @@ $$
 $$
 <p> A investigação desse modelo determinístico no equilíbrio mostra o quê poderíamos esperar no longo prazo caso não houvesse nenhuma flutuação devido à estocástica dos eventos demográficos. No espaço de fase definido pela abundância da espécie residente, no eixo x, e da invasora, eixo y, a isolinha descreve as combinações de tamanhos populacionais onde o crescimento populacional da espécie focal é zero. Para explorar os cenários determinísticos no equilíbrio é possível expressar as duas isolinhas em função da abundância da invasora (eq. 4a e 4b e figura 1).</p>
 
-
 $$
 <m> = \frac{\beta_n - \delta_n}{C_n} - \frac{<n'>\gamma_n}{2C_n} 
 $$
 $$
 <m'> = \frac{2(\beta_m - \delta_m)}{\gamma_m} - \frac{2C_m<n>}{\gamma_m} 
 $$
-
-
-
 
 
 ## The computational model
@@ -222,21 +218,29 @@ l_p[[2]] <- df_plot |>
 grid.arrange(grobs=l_p,ncol=2,layout_matrix=matrix(c(1,1,1,1,2,2),nrow=1))
 ```
   
-__Figura 1__ Cenários simulados de competição interespecífica.  Eixo y: assimetria competitiva -  a diferença no parâmetro C da espécie residente pela invasora, dividido pelo parâmetro $\gamma$. Eixo x: tamanhos iniciais da espécie invasora de 1% até 100%.
+__Figura 1__ Cenários simulados de competição interespecífica (a) e as isolinhas obtidas na aproximação de campo médio na  plano de fase (b). a) Eixo y: assimetria competitiva -  a diferença no parâmetro C da espécie residente pela invasora, dividido pelo parâmetro $\gamma$. Eixo x: tamanhos iniciais da espécie invasora de 4% até 100%. b) O plano de fase é definido pelas possíveis abundâncias da espécie residente (eixo x) e da espécie invasora (y).
  
 
 
 
-### anaĺise dos dados
+### Análise dos dados
 
-<p>Para responder a primeira pergunta, como a probabilidade de substituição da residente varia em função do tamanho inicial da invasora e da assimetria competitiva, é possível usar a abordagem de campo médio e a de simulação de trajetórias individuais. No caso da abordagem de campo médio, exceto pelo cenário de equivalência das espécies (assimetria competitiva nula) que depende totalmente das condições iniciais e do regime de perturbações, dado tempo suficiente haverá certamente a substituição ou a não substituição da espécie residente pela invasora, em função da assimetria competitiva a favor da invasora ou da residente, respectivamente. Nessa abordagem basta plotar as soluções de equilíbrio das equações 3a e 3b em um plano de fase definido pelas abundância de N e M para avaliar qual o ponto de equilíbrio estável para definir se haverá ou não evento de substituição. No caso da simulação de trajetórias individuais, considerei a identidade da espécie que permanece após a primeira extinção. Se a espécie que permanece é a invasora então ocorreu um evento de substituição da residente pela invasora. Para descrever a probabilidade de substituição na simulação das trajetórias indivíduais usei um GLM binomial com o tamanho inicial da invasora e a assimetria competitiva como variáveis preditoras. Usei uma abordagem baseada em modelo médio (REF), em que a partir de um modelo cheio é ajustado todos os possíveis submodelos e então a predição de cada modelo é ponderada pelo peso de evidência do submodelo. O GLM binomial cheio considerou a interação do polinômio de segundo grau de cada preditora.</p>
-<p>Para responder a segunda pergunta, como a presença da residente reduz o tempo de extinção da invasora, é necessário descrever o tempo de extinção da invasora nas simulações de trajetórias individuais em duas situações. A primeira situação é obtida pela análise da distribuição de tempos de extinção da invasora na presença da competidora, ou seja, os tempos totais até a espécie invasora se extinguir, seja ela a primeira ou última a se extinguir. Essa primeira situação pode ser descrita por um LMM em que os tempos de extinção de réplicas de uma mesma bateria de simulação (combinação única de tamanho inicial e assimetria competitiva) são agrupadas na estrutura aleatória (REF), e então usei as mesmas preditoras do GLM binomial para construir um modelo cheio. Na segunda situação considerei apenas o tempo parcial de extinção na ausência da residente, ou seja, considerei que o tempo é zerado no momento do evento de substituição. Para descrever a segunda situação é possível usar um LM em que o modelo cheio é composto pelo polinômio de segundo grau do tamanho da espécie invasora no momento do evento de substituição. Em ambas situações usei uma abordagem de modelo médio para construir o predito para os tempos de extinção. Então calculei a diferença no predito pelo modelo médio na segunda situação pela primeira situação.</p>
+__Probabilidade de substituição da residente pela invasora__
+<p> Para avaliar a probabilidade de substituição da espécie residente pela invasora, considerei a identidade da espécie que permanece após a primeira extinção. Se a espécie que permanece é a invasora então ocorreu um evento de substituição. Para descrever a probabilidade de substituição na simulação das trajetórias individuais usei um GLM binomial logito com o tamanho inicial da invasora e a assimetria competitiva como variáveis preditoras (detalhes no apêndice). Usei uma abordagem baseada em modelo médio (Dormann et al. 2018), em que a partir de um modelo cheio é ajustado todos os possíveis submodelos e então a predição de cada modelo é ponderada pelo peso de evidência do submodelo. O GLM binomial cheio considerou a interação do polinômio de segundo grau de cada preditora; o tamanho populacional inicial da invasora pode ser usado na escala log.</p>
 
-# Resultados
+__Tempo de extinção da Invasora na presença e ausência da residente__
+<p> Descrevi o tempo de extinção da espécie invasora em duas situações: considerando o tempo junto com a residente e o tempo parcial sem a residente, nas simulações em que houve substituição da residente. Na primeira situação é considerado a distribuição de tempos de extinção da invasora na presença da competidora, ou seja, os tempos totais até a espécie invasora se extinguir, seja ela a primeira ou última a se extinguir. Na segunda situação considerei apenas o tempo parcial de extinção na ausência da residente, ou seja, considerei que o tempo é zerado no momento do evento de substituição. Uma possível família de distribuição de probabilidades para descrever esses dados é a distribuição Gamma, pois mecanisticamente ela descreve o tempo de espera até que um certo número de eventos ocorra e em certas condições ela pode convergir para uma distribuição exponencial (Bolker 2007). A distribuição Gamma conta com dois parâmetros: de forma e de taxa. O parâmetro da taxa pode ser reescrito como a razão entre o parâmetro da forma e a média (primeiro momento) e a média pode ser definida como o exponencial do descritor linear em um GLM Gamma com função de ligação log (Bossio & Cuervo 2015). Para descrever o tempo de extinção na primeira situação, considerando a presença da residente, o mais adequado seria considerar um GLMM Gamma log (Informação de Suporte), agrupando os valores das réplicas para uma mesma combinação única de parâmetros, porém isso dificultaria a estimativa do parâmetro da forma e da predição pelo modelo médio. Assim, escolhi usar o GLM Gamma log para obter a predição do modelo média para essa situação em tempo suficiente para elaborar o artigo completo. No GLM Gamma log usei as mesmas preditoras usadas no GLM Binomial logito..</p>
 
+### Trabalho Computacional
+
+Todo o trabalho computacional foi feito no ambiente de programação R (REF) usando os pacotes básicos e os pacotes adicionais trackdown (REF), knitr (REF), kableExtra (REF), bbmle (REF), MuMIn (REF), AICcmodavg (REF), lme4(REF), gridExtra(REF), doMC(REF), plyr(REF) e tidyverse (REF).
+
+## Resultados
 
 #### Como a probabilidade de substituição varia com o tamanho inicial da invasora e a assimetria competitiva?
 
+<p>Uma expectativa era que quanto menor o tamanho populacional da espécie invasora menor a probabilidade de substituição, pois a chance de flutuações estocásticas extinguirem a espécie é maior quando a abundância está próxima de zero, mesmo em situações favoráveis. Outra expectativa é baseada nos cenários determinísticos da aproximação de campo médio. Exceto pelo cenário de equivalência das espécies (assimetria competitiva zero) que depende das condições iniciais e do regime de perturbações, dado tempo suficiente, a invasão resultará na substituição ou não da espécie residente, independente do tamanho inicial da espécie invasora. Os parâmetros de competição interespecífica variaram de tal forma que a exclusão da residente ocorreria quando a assimetria competitiva fosse positiva e a exclusão da invasora quando a assimetria competitiva fosse negativa (Figura 1b). Portanto, a expectativa era que a probabilidade de substituição iria aumentar com o tamanho populacional inicial da invasora e da assimetria competitiva.</p>
+<p>A expectativa foi observada, na figura 2 há a probabilidade de substituição predita pelo modelo médio em função do tamanho inicial da invasora (eixo x = M0) e da assimetria competitiva (eixo y = C_nm), no painél principal a probabilidade média, nos dois de baixo o intervalo de confiança assintoticamente normal na escala da função de ligação logito (REF MODAVGPREV). O predito pelo modelo médio mostra que o efeito da assimetria competitiva só se torna relevante quanto maior o tamanho populacional inicial da invasora: apenas a partir de M0 = 20 nota-se aumento da probabilidade de substituição com o aumento de C_nm (Figura 1). o GLM Binomial logito cheio selecionado considerou os efeitos do polinômio de segundo grau da assimetria competitiva e do log do tamanho inicial da espécie invasora sem o efeito da interação dos polinômios. Esse modelo cheio apresentou bom ajuste; e de fato, apesar das proporções observadas apresentarem grande variação (Figura SI X), o predito se assemelha ao observado (Figura SI X). A grande variação nas proporções observadas sugere que a capacidade de suporte é pequena, resultando em populações com flutuações elevadas.</p> 
   
 ```{r figura 2 Probabilidade de substituicao da residente pela invasora}
 # dados
@@ -282,11 +286,18 @@ grid.arrange(grobs=l_p,
 ```
   
   
-__Figura 2__ Gráfico Exploratório da Probabilidade da espécie invasora substituir a espécie residente em função da assimetria competitiva (eixo y) e tamanho populacional inicial da espécie invasora (eixo x).  
+__Figura 2__ Probabilidade de substituição da espécie residente pela invasora. Eixo x = tamanho inicial da espécie invasora, M0. Eixo y = assimetria competitiva, definida como $(C_n - C_m)2/\gamma$, $C_n$ e $C_m$ variaram entre $\gamma/2$ e $\gamma/4$. No painel principal há a probabilidade média predita pelo modelo médio e nos painéis de baixo o intervalo de confiança de 5% e 95% assintoticamente normal na escala da função de ligação logito.
 
-## Como a presença da residente reduz o tempo de extinção da invasora?
+#### Como a presença da residente reduz o tempo de extinção da invasora?
 
-```{r figura 3}
+<p>Uma expectativa era que na presença da competidora, qualquer espécie sofreria alguma redução no tamanho populacional. Em um sistema estocástico, quanto menor o tamanho populacional maior as chances de extinção devido a estocasticidade demográfica, assim a presença da competidora implicaria em redução do tempo médio de extinção. Outra expectativa é que quanto maior a assimetria competitiva menor deve ser a influência da residente na invasora, enquanto a influência per capita da invasora deve ser similar à influência da residente nela mesma. Portanto, a expectativa era de que a redução no tempo de extinção deveria ser menor quanto maior a assimetria competitiva.</p>
+<p>A expectativa foi observada principalmente quando o tamanho inicial da invasora foi maior (Figura 3). Na figura 3 há os pontos observados de tempo de extinção da espécie invasora considerando os tempos totais; em vermelho o predito para os tempos totais, essa predição varia entre os painéis em função da assimetria competitiva; em azul o predito pelo modelo médio para o conjunto de dados em que houve evento de substituição e foi desconsiderado o tempo da invasora com a residente, essa predição é igual nos três painéis. Para obter a predição para o conjunto de tempos parciais desconsiderei as simulações onde o tamanho da invasora no momento da substituição foi maior do que 50 ou menor do que 2. Os tempos de extinção nas duas situações são marcados pela variabilidade no conjunto de dados (FIgura SI X) e o GLM Gamma log não apresentou um excelente ajuste (Apêndice 1). O parâmetro da forma estimado pelo GLM Gamma log se aproxima 
+</p>
+
+
+
+
+```{r figura 3, fig.height=9.85,fig.width=8.5}
 # preparação dos dados
 ## df_plot_2spp
 df_plot_2spp <- read_csv("resultados/df_GLMGamma_modavg_2spp.csv") |> 
@@ -307,21 +318,46 @@ names(df_plot_1spp)[-1] <- paste0(names(df_plot_1spp)[-1],"_1sp")
 ### df_plot
 df_plot <- left_join(df_plot_2spp,df_plot_1spp,by="M0")
 # gráficos
-df_plot |> 
+l_p <- list()
+# observado e predito nas duas stiauções
+l_p[[1]] <- df_plot |> 
   ggplot(aes(x=M0,y=TE)) +
   geom_point() +
   geom_ribbon(aes(ymin=lower.CL_exp,ymax=upper.CL_exp),alpha=0.5,color="red",fill="red") +
   geom_line(aes(y=mod.avg.pred_exp)) +
   geom_ribbon(aes(ymin=lower.CL_exp_1sp,ymax=upper.CL_exp_1sp),alpha=0.5,color="blue",fill="blue",alpha=0.5) +
   geom_line(aes(y=mod.avg.pred_exp_1sp),color="blue",alpha=0.5) +
-  labs(y="Tempo Extinção (anos)",x="Tamanho inicial invasora") +
+  labs(y="Tempo Extinção (anos)",x="Tamanho inicial invasora", title = "a) Tempo para Ext da inv. na presença da residente e as predições") +
   facet_wrap(~C_nm,ncol=3)
+# figura 3 b
+# preparação dos dados
+## df_plot_2spp
+df_plot_2spp <- read_csv("resultados/df_GLMGamma_modavg_2spp.csv") |> 
+  filter(C_nm %in% c(-0.5,0,0.5), M0 %in% c(2,25,50)) |> 
+  select(TE:M0,C_nm) |> mutate(C_nm = as.character(C_nm))
+### df_plot_1spp
+df_plot_1spp <- read_csv("resultados/df_GLMGamma_modavg_1sp.csv") |> 
+  arrange(M0) |> 
+  filter(M0 %in% unique(df_plot_2spp$M0)) |> 
+  select(TE:M0) |> mutate(C_nm = "1sp")
+### df_plot
+df_plot <- rbind(df_plot_2spp,df_plot_1spp) |> 
+  mutate(across(M0:C_nm,factor))
+### l_p[[2]]
+l_p[[2]] <- df_plot |> 
+  ggplot(aes(x=TE)) +
+  geom_histogram(aes(y=..density..), colour="black", fill="white") +
+  geom_density(alpha=.2, fill="#FF6666") +
+  labs(x="Tempo de Extinção",title = "b) Distr. de Tempos para Extinsão da invasora") +
+  facet_grid(M0~C_nm,scales="free")
+# grid arrange
+grid.arrange(grobs=l_p,
+             layout_matrix=rbind(1,1,1,2,2,2,2))
 ```
 
-
+__Figura 3__ Tempo de Extinção da espécie invasora observado (pontos) e predito (vermelho) e o predito para o tempo de extinção na ausência da residente (azul). Eixo x = tamanho inicial da espécie invasora (indivíduos), M0. Eixo y = Tempo de Extinção da invasora (anos), TE. No título superior a assimetria competitiva. Na figura b.
 
  # Discussão
-
 
 
 
@@ -347,7 +383,6 @@ plyr::rdply(.n = 2,f_loop())
 end_time <- Sys.time()
 end_time - start_time
 ```
-
 
 ```{r simulação do modelo estocastico, eval=FALSE,echo=FALSE,include=TRUE}
 registerDoMC(3)
@@ -406,7 +441,6 @@ plyr::a_ply(df_sim2,1,
     
 <!-- ## Cálculo das métricas de avaliação   -->
 
-
 <!-- ### Contagem de eventos de substituição  -->
     
       
@@ -454,7 +488,7 @@ write_csv(df_tParcial,file = "resultados/df_tParcial.csv")
   
 ## Modelos estatísticos
 
-### Probabilidade de substituição da residente pela invasora
+### Proporção de eventos de substituição em 100 réplicas
 
 ```{r graf exp prob replace the resident, echo=FALSE,include=TRUE,eval=TRUE}
 df_resultados <- readr::read_csv("resultados/df_tFinal.csv")
@@ -474,11 +508,8 @@ df_resultados |>
 ```
 
 __Figura A1__ Proporção observada de substituições 
-
-
-O modelo cheio mais plausível é aquele que considera a interação entre os polinômios (Tabela 1). Porêm este modelo não apresenta um excelente ajuste aos dados (Figura SI 1 e sumário do módelo 1). O predito e observado diferem em valores extremos: quando a proporção de substituições é baixa, o predito pode subestimar a probabilidade de substituição (Figura SI 2); quando a proporção é alta, o predito pode superestimar a probabilidade. Para as análises utilizei os pacotes DHARMa (REF), MuMIn (REF) e AICcmodavg (REF).
-
-
+  
+    
 __tabela A1__ seleção de GLM Binomial Cheio para descrever a probabilidade de substituição
 
 ```{r modelo estatístico para descrever a probabilidade de invasao,echo=FALSE,include=FALSE,eval=TRUE}
@@ -604,12 +635,12 @@ ggplot(df_md,aes(x=c_invasion,y=Pr_invasion)) +
   geom_point() + 
   labs(x="número de substituições",
        y="predito pelo modelo médio",
-       title="Predito pelo modelo médio X Observado",
+       title="GLM Binomial Logito: Predito pelo modelo médio X Observado",
        color = "") +
   scale_color_manual(values = colors)
 ```
     
-__Figura A3__ predito pelo modelo médio e observado.   
+__Figura A3__ GLM Binomial Logito: predito pelo modelo médio e observado.   
 
 ### Tempo de Extinção
 
@@ -679,12 +710,11 @@ l_p[[4]] <- df_1sp |>
 grid.arrange(grobs=l_p,ncol=2,top="Conjunto Parcial: 50 >= tamanho inicial > 1")
 ```
 
-__Figura A4__ Conjunto de dados completo do Tempo estimado de extinção na ausência da competidora 
+__Figura A4__ Conjunto de dados completo do Tempo estimado de extinção na ausência da competidora e conjunto de dados parcial considerando M0 <50 e 
 
-##### Ajuste modelo cheio LM TE 1sp
+##### Ajuste modelo cheio GLM Gamma log Tempo de Extinção sistema com 1 sp
 
-__Tabela A6__ Tabela seleção do modelo referência para descrever o log(Tempo de Extinção).  
-
+__Tabela A6__ Tabela seleção do modelo referência para descrever o Tempo de Extinção no sistema com 1 sp.  
 
 ```{r ajuste modelo cheio lm TE 1sp 1 }
 # modelos
@@ -703,10 +733,10 @@ res.Dharma <- DHARMa::simulateResiduals(l_md[["log(M0)^2"]],n = 250,refit = FALS
 plot(res.Dharma)
 ```
     
-__Figura A5__ Resíduos Quantílicos LM referência para descrever o tempo de extinção na ausência de residente. Resíduos quantílícos obtidos com a função simulateResiduals do pacote DHARMa, com 250 simulações.  
+__Figura A5__ GLM Gamma log (Tempo Extinção 1sp): Resíduos Quantílicos do modelo cheio para descrever o tempo de extinção na ausência de residente. Resíduos quantílícos obtidos com a função simulateResiduals do pacote DHARMa, com 250 simulações.  
   
 
-__tabela A6__ Sumário do modelo 2: LM referência polinômio de segundo grau
+__tabela A6__ Sumário do modelo 2: GLM Gamma log (Tempo Extinção 1sp) cheio selecionado, TE ~ poli(log(M0),2)
 
 ```{r sumário do LM referencia do tempo de extincao na ausencia da residente 1 }
 summary(l_md[["log(M0)^2"]])
@@ -714,40 +744,7 @@ print("MASS::gamma.shape return:")
 MASS::gamma.shape(l_md[["log(M0)^2"]])
 ```
 
-```{r graficos diagnostico padrao log lm TE 1sp,include=FALSE}
-par(mfrow=c(2,2))
-plot(l_md[["log(M0)^2"]])
-```
-
-
-###### Modelo Médio
-
-
-```{r lm log(TE) logM0 1sp modelo medio MUMIN,include=FALSE}
-# modelo referência
-md_ref <- glm(TE ~ log_M0 + I(log_M0^2),data = df_1sp, na.action = "na.fail",Gamma(log))
-# todas as combinações do modelo cheio
-registerDoMC(3)
-l_dredge_nInvasions <- llply(dredge(md_ref,trace = FALSE,evaluate=FALSE), eval,.parallel = TRUE)
-# Model Averaging for the observed data
-mdAvg_MuMIn <- model.avg(l_dredge_nInvasions)
-# Model Averaging for new data predictions
-# Predição
-df_md <- df_1sp
-df_md$log_TE_predict <- predict(mdAvg_MuMIn,type="link")
-# Gráfico
-colors <- c("loess" = "blue", "1 : 1" = "black")
-ggplot(df_md,aes(x=log_TE,y=log_TE_predict)) +
-  geom_point(alpha=0.3) + 
-  geom_smooth(aes(color="loess"),method = "loess",formula = "y~x",se=FALSE) +
-  geom_abline(aes(color="1 : 1"),slope=1,intercept = 0,size=2) +
-  labs(x="observado",
-       y="predito",
-       title="log(TE) ~ log(M0)^2: Predito pelo modelo médio X Observado",
-       color = "") +
-  scale_color_manual(values = colors)
-```
-
+###### Modelo Médio GLM Gamma log Tempo de Extinção sistema com 1 sp
 
 
 ```{r TE single specie, eval=FALSE}
@@ -783,7 +780,7 @@ l_p[[2]] <- df_AICcmodavg |>
   geom_line(aes(y=mod.avg.pred_exp)) +
   labs(y="TE (anos)",x="M0 (indivíduos)") +
   facet_wrap(~label)
-grid.arrange(grobs=l_p,ncol=2,top="Observado e Predito pelo GLM Gamma(log)")
+grid.arrange(grobs=l_p,ncol=2,top="GLM Gamma(log) TE 1sp: Observado e Predito pelo ")
 ```
  
   
@@ -827,11 +824,10 @@ grid.arrange(grobs=l_p,ncol=2,top="Tempo de Extinção total: sucesso e fracasso
   
 __Figura A9__ Gráficos exploratórios do Tempo de Extinção total: quando a substituição foi um sucesso ou fracasso    
 
-
 __Tabela A7__ Seleção do modelo cheio para descrever o tempo de extinção total.  
   
   
-```{r ajuste modelo cheio lm TEI 2spp 1 }
+```{r ajuste modelo cheio TEI 2spp 1 }
 # dados
 df_2sp <- read_csv(file="resultados/df_rep_tFinal.csv") |> 
   mutate(log_M0 = log(M0),
@@ -864,30 +860,38 @@ l_md[[13]] <- glm(TE ~ (C_nm.z + I(C_nm.z^2))+(log_M0.z + I(log_M0.z^2)),data = 
 l_md[[14]] <- glm(TE ~ (log_M0.z + I(log_M0.z^2)),data = df_2sp, Gamma(log))
 l_md[[15]] <- glm(TE ~ (C_nm.z + I(C_nm.z^2)),data = df_2sp, Gamma(log))
 l_md[[16]] <- glm(TE ~ 1,data = df_2sp, Gamma(log))
-names(l_md) <- c("C_nm^2 * M0^2","C_nm^2 + M0^2","M0^2",
-                 "C_nm^2 * log(M0)^2","C_nm^2 + log(M0)^2","log(M0)^2",
-                 "C_nm^2","1",
+names(l_md) <- c("GLMER:: C_nm^2 * M0^2","GLMER:: C_nm^2 + M0^2","GLMER:: M0^2",
+                 "GLMER:: C_nm^2 * log(M0)^2","GLMER:: C_nm^2 + log(M0)^2","GLMER:: log(M0)^2",
+                 "GLMER:: C_nm^2","GLMER:: 1",
                  "GLM:: C_nm^2 * M0^2","GLM::C_nm^2 + M0^2","GLM:: M0^2",
                  "GLM:: C_nm^2 * log(M0)^2","GLM:: C_nm^2 + log(M0)^2","GLM:: log(M0)^2",
                  "GLM:: C_nm^2","GLM:: 1")
 AICctab(l_md,weights=TRUE)
 ```
 
-
-__Tabela A8__ sumário do glmer Gamma(log) TEI 2spp cheio mais plausível: C_nm^2 + log(M0)^2  
+__Tabela A8__ sumário do glmer Gamma(log) TE 2spp cheio mais plausível: C_nm^2 + log(M0)^2  
   
 ```{r tabela A8}
-summary(l_md[["C_nm^2 + log(M0)^2"]])
+summary(l_md[["GLMER:: C_nm^2 + log(M0)^2"]])
 ```
-
 
 
 ```{r residuos quantilicos lmer TEI 2spp}
-res.Dharma <- DHARMa::simulateResiduals(l_md[["C_nm^2 + log(M0)^2"]],n = 250,refit = FALSE)
+res.Dharma <- DHARMa::simulateResiduals(l_md[["GLMER:: C_nm^2 + log(M0)^2"]],n = 250,refit = FALSE)
 plot(res.Dharma)
 ```
 
-__Figura A10__ Resíduos quantílicos glmer Gamma(log) TEI 2spp cheio: C_nm^2 + log(M0)^2
+__Figura A10__ "GLMER:: C_nm^2 * M0^2" Resíduos quantílicos glmer Gamma(log) TE 2spp cheio, C_nm^2 + log(M0)^2
+
+
+
+__Tabela A9__ sumário do GLM Gamma(log) TE 2spp cheio mais plausível: C_nm^2 + log(M0)^2  
+
+```{r}
+summary(l_md[["GLM:: C_nm^2 + log(M0)^2"]])
+print("MASS::gamma.shape return:")
+MASS::gamma.shape(l_md[["GLM:: C_nm^2 + log(M0)^2"]])
+```
 
 
 ```{r Figura A11 glm GAMMA cheio}
@@ -895,10 +899,9 @@ res.Dharma <- DHARMa::simulateResiduals(l_md[["GLM:: C_nm^2 + log(M0)^2"]],n = 2
 plot(res.Dharma)
 ```
 
-__Figura A11__ Resíduos quantílicos glmer Gamma(log) TEI 2spp cheio: C_nm^2 + log(M0)^2
+__Figura A11__ GLM Gamma log TE 2spp: Resíduos quantílicos, C_nm^2 + log(M0)^2
 
-###### Modelo Médio
-
+###### GLM Gamma log TE 2spp: Modelo Médio
 
 ```{r modelo medio glm gamma 2sp,eval=FALSE}
 # modelo referência
@@ -935,33 +938,5 @@ l_p[[2]] <- df_AICcmodavg |>
   geom_line(aes(y=mod.avg.pred_exp)) +
   labs(y="TE (anos)",x="M0 (indivíduos)") +
   facet_wrap(~C_nm,ncol=3)
-grid.arrange(grobs=l_p,ncol=1,top="Observado e Predito pelo GLM Gamma(log)")
+grid.arrange(grobs=l_p,ncol=1,top="GLM Gamma(log) TE 2spp: Observado e Predito")
 ```
-
-
-
-
-######## projeto da figura
-
-```{r figura 3b}
-# preparação dos dados
-## df_plot_2spp
-df_plot_2spp <- read_csv("resultados/df_GLMGamma_modavg_2spp.csv") |> 
-  filter(C_nm %in% c(-0.5,0,0.5), M0 %in% c(2,25,50)) |> 
-  select(TE:M0,C_nm) |> mutate(C_nm = as.character(C_nm))
-### df_plot_1spp
-df_plot_1spp <- read_csv("resultados/df_GLMGamma_modavg_1sp.csv") |> 
-  arrange(M0) |> 
-  filter(M0 %in% unique(df_plot_2spp$M0)) |> 
-  select(TE:M0) |> mutate(C_nm = "1sp")
-### df_plot
-df_plot <- rbind(df_plot_2spp,df_plot_1spp) |> 
-  mutate(across(M0:C_nm,factor))
-# gráficos
-df_plot |> 
-  ggplot(aes(x=TE)) +
-  geom_histogram(aes(y=..density..), colour="black", fill="white") +
-  geom_density(alpha=.2, fill="#FF6666") +
-  facet_grid(M0~C_nm,scales="free_y")
-```
-
