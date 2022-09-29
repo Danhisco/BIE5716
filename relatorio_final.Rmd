@@ -5,10 +5,12 @@ date: "2022-08-20"
 output: html_document
 editor_options: 
   chunk_output_type: inline
+bibliography: citations.bib
+csl: plos.csl
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE,message = FALSE,warning = FALSE,cache = FALSE)
+knitr::opts_chunk$set(echo = FALSE,message = FALSE,warning = FALSE,cache = TRUE)
 ```
 
 ```{r pacotes, include=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE}
@@ -45,7 +47,7 @@ download_file(file ="relatorio_final.Rmd",
 ### Introdução  
    
 <p>O modelo de crescimento exponencial incorpora o princípio fundamental de que a vida provém de outra e assim examina o comportamento de uma população que pode crescer sem limitação alguma. Ao incluir a influência que o aumento na densidade populacional pode ter na limitação do crescimento, o modelo logístico incorpora outro princípio fundamental que é o da perda de excedente de indivíduos esperado por um crescimento ilimitado. Caso uma população crescesse de forma exponencial todo o universo conhecido poderia estar colonizado por um único tipo de vida. Outro componente essencial da modulação dos eventos demográficos é a interação com outras espécies, como competição interespecífica. </p>
-<p>Os modelos de competição de populações em denso dependência do arcabouço de reações de difusão (estocásticos) diferem dos modelos baseados em taxas constantes (determinísticos), pois os eventos demográficos são representados como eventos probabilísticos que podem ou não ocorrer em intervalos de tempo muito pequenos. Dessa forma, os modelos estocásticos possibilitam eventos de extinção de populações que poderiam permanecer indefinidamente no predito determinístico; ou flutuações nos tamanhos populacionais, propriedade ausente nos modelos determinísticos de denso dependência linear. Os modelos estocásticos podem ser descritos por uma equação mestra, um conjunto de equações diferenciais de primeira ordem que descrevem como a probabilidade de todos os possíveis estados do sistema varia no tempo contínuo. A partir da equação mestra é possível calcular a equação diferencial do primeiro momento da distribuição de probabilidades do sistema. Usando a aproximação de campo médio, onde é pressuposto variância zero, a equação diferencial do primeiro momento converge para a solução determinística. Alternativamente à descrição de todos os estados do sistema, é possível simular trajetórias individuais no sistema com o algoritmo de Gillespie (1977), onde podemos acompanhar a trajetória da abundância de cada espécie até a extinção.</p>
+<p>Os modelos de competição de populações em denso dependência do arcabouço de reações de difusão (estocásticos) diferem dos modelos baseados em taxas constantes (determinísticos), pois os eventos demográficos são representados como eventos probabilísticos que podem ou não ocorrer em intervalos de tempo muito pequenos. Dessa forma, os modelos estocásticos possibilitam eventos de extinção de populações que poderiam permanecer indefinidamente no predito determinístico; ou flutuações nos tamanhos populacionais, propriedade ausente nos modelos determinísticos de denso dependência linear. Os modelos estocásticos podem ser descritos por uma equação mestra, um conjunto de equações diferenciais de primeira ordem que descrevem como a probabilidade de todos os possíveis estados do sistema varia no tempo contínuo. A partir da equação mestra é possível calcular a equação diferencial do primeiro momento da distribuição de probabilidades do sistema. Usando a aproximação de campo médio, onde é pressuposto variância zero, a equação diferencial do primeiro momento converge para a solução determinística. Alternativamente à descrição de todos os estados do sistema, é possível simular trajetórias individuais no sistema com o algoritmo de Gillespie [@Gillespie1977], onde podemos acompanhar a trajetória da abundância de cada espécie até a extinção.</p>
 <p>Aqui vamos explorar a competição de 2 populações em crescimento denso dependente, N e M, em cenários de invasão da espécie M no sistema dominado por N que se encontra em sua capacidade de suporte. Usando modelos estocásticos e a aproximação de campo médio, explorei cenários de assimetria competitiva e de tamanho inicial da espécie invasora. Me pergunto a) Como a probabilidade de substituição da espécie residente pela invasora varia com o tamanho populacional inicial da invasora e da assimetria competitiva? e b) Como a presença da espécie residente reduz o tempo de extinção da espécie invasora?</p>
 
 ### Métodos
@@ -67,7 +69,7 @@ df_tabela1 <- data.frame(reactions = c("n -> n + n","n -> 0","n + n -> n","n + m
                                            "$P(exclusão de M)/colisão M dt$","$P(exclusão de M)/colisão M N dt$"))
 df_tabela1 %>%
   kbl(caption = "Tabela 1. Possíveis reações no modelo estocástico de competição de duas espécies sob denso dependência",
-      col.names = c("reações","descrição","P(reação)/dt","unidade do parâmetro")) %>%
+      col.names = c("reações","descrição","taxa","unidade do parâmetro")) %>%
   kable_classic(full_width = T, html_font = "Cambria")
 
 ```
@@ -76,12 +78,13 @@ df_tabela1 %>%
      
 <p>A partir das reações é possível desenvolver uma equação mestra que descreve a taxa de mudança da probabilidade de um determinado estado [$\frac{\partial P(n,m,t)}{\partial t}$] pela diferença na taxa da probabilidade de entrada e saída deste estado (equação 1). Na primeira linha depois da igualdade, há a soma das taxa com que N pode perder um indivíduo, indo do estado (n+1,m) para o estado (n,m). Na segunda linha a taxa com que N pode ganhar um indivíduo, indo do estado (n-1,m) para o estado (n,m). Nas linhas 3 e 4 a mesma lógica para M. Na quinta linha há a taxa de saída do estado (n,m). Para detalhes veja tabela 1.</p>
 
-$$
+\begin{equation}\label{eqn: 1}
 \frac{\partial P(n,m,t)}{\partial t} = \\
 P(n+1,m) (n+1) (\delta_n + n \gamma_n / 2 + m C_{n}) +\\ P(n-1,m) (n-1) \beta_n+\\ 
 P(n,m+1) (m+1) (\delta_m + m \gamma_m / 2 + n C_{m}) +\\ P(n,m-1) (m-1) \beta_m+\\
 - P(n,m)[n(\beta_n + \delta_n + (n-1) \gamma_n / 2 + m C_{n}) + m(\beta_m + \delta_m + (m-1) \gamma_m / 2 + n C_{m})]
-$$
+\end{equation}
+
 
 <p>Na aproximação de campo médio buscamos obter o primeiro momento da distribuição de probabilidade marginal de N, E[N] = <n>, e de M, E[M] = <m>. Para isso é necessário estabelecer algumas definições: $<n> = \sum_{n=0}^{\infty} n P(n,m,t)$; $<n^2> = \sum_{n=0}^{\infty} n^2 P(n,m,t)$; $<m> = \sum_{m=0}^{\infty} m P(n,m,t)$; $<m^2> = \sum_{m=0}^{\infty} m^2 P(n,m,t)$; $<nm> = \sum_{n=0}^{\infty}\sum_{m=0}^{\infty} nm P(n,m,t)$. Para obter o primeiro momento marginal de N ou M basta multiplicar a equação mestra por n ou m e realizar o somatório (apêndice 1), e então é possível obter as equações 2a e 2b:</p>
 
@@ -111,7 +114,7 @@ $$
 
 #### The computational model
 ´
-<p>A ideia do algoritmo de Gillespie (1977) se baseia no fato de que a distribuição de tempos entre mudanças de estados pode ser descrita por uma distribuição exponencial, então computamos separadamente as mudanças de estado e o tempo entre mudanças, reduzindo o tempo de simulação.  O tempo entre mudança de estados pode ser obtido pela divisão do log de uma amostra de distribuição uniforme padrão pela soma das taxas de saída do estado (janela de código 1). Existem 4 possíveis transições de estado: cada uma das duas espécies pode ganhar ou perder um indivíduo por evento demográfico no intervalo de tempo dt. A taxa de ganho de um indivíduo de N ($n\_p$) é  $n\_p=\beta n$. A taxa de perda de um indivíduo de N ($n\_m$) é $n\_m = n[\delta +(n-1)\gamma2^{-1} + mC_n]$. A mesma lógica se aplica para as taxas de ganho e perda da espécie M (eq. 1 e janela de código 1). Após o sorteio do tempo do próximo evento demográfico, é feito um sorteio da mudança de estado com probabilidade dada pela contribuição relativa de cada taxa de saída (janela de código 1), então o sistema é atualizado. Nossa simulação termina quando a espécie invasora atinge a abundância zero.</p>
+<p>A ideia do algoritmo de Gillespie [@Gillespie1977] se baseia no fato de que a distribuição de tempos entre mudanças de estados pode ser descrita por uma distribuição exponencial, então computamos separadamente as mudanças de estado e o tempo entre mudanças, reduzindo o tempo de simulação.  O tempo entre mudança de estados pode ser obtido pela divisão do log de uma amostra de distribuição uniforme padrão pela soma das taxas de saída do estado (janela de código 1). Existem 4 possíveis transições de estado: cada uma das duas espécies pode ganhar ou perder um indivíduo por evento demográfico no intervalo de tempo dt. A taxa de ganho de um indivíduo de N ($n\_p$) é  $n\_p=\beta n$. A taxa de perda de um indivíduo de N ($n\_m$) é $n\_m = n[\delta +(n-1)\gamma2^{-1} + mC_n]$. A mesma lógica se aplica para as taxas de ganho e perda da espécie M (eq. 1 e janela de código 1). Após o sorteio do tempo do próximo evento demográfico, é feito um sorteio da mudança de estado com probabilidade dada pela contribuição relativa de cada taxa de saída (janela de código 1), então o sistema é atualizado. Nossa simulação termina quando a espécie invasora atinge a abundância zero.</p>
 
 __janela de código 1__
 
@@ -225,21 +228,21 @@ __Figura 1__ Cenários simulados de competição interespecífica (a) e as isoli
 #### Análise dos dados
 
 __Probabilidade de substituição da residente pela invasora__
-<p> Para avaliar a probabilidade de substituição da espécie residente pela invasora, considerei a identidade da espécie que permanece após a primeira extinção. Se a espécie que permanece é a invasora então ocorreu um evento de substituição. Para descrever a probabilidade de substituição na simulação das trajetórias individuais usei um GLM binomial logito com o tamanho inicial da invasora e a assimetria competitiva como variáveis preditoras (detalhes no apêndice). Usei uma abordagem baseada em modelo médio (Dormann et al. 2018), em que a partir de um modelo cheio é ajustado todos os possíveis submodelos e então a predição de cada modelo é ponderada pelo peso de evidência do submodelo. O GLM binomial cheio considerou a interação do polinômio de segundo grau de cada preditora; o tamanho populacional inicial da invasora pode ser usado na escala log.</p>
+<p> Para avaliar a probabilidade de substituição da espécie residente pela invasora, considerei a identidade da espécie que permanece após a primeira extinção. Se a espécie que permanece é a invasora então ocorreu um evento de substituição. Para descrever a probabilidade de substituição na simulação das trajetórias individuais usei um GLM binomial logito com o tamanho inicial da invasora e a assimetria competitiva como variáveis preditoras (detalhes no apêndice). Usei uma abordagem baseada em modelo médio [@Dormann2018], em que a partir de um modelo cheio é ajustado todos os possíveis submodelos e então a predição de cada modelo é ponderada pelo peso de evidência do submodelo. O GLM binomial cheio considerou a interação do polinômio de segundo grau de cada preditora; o tamanho populacional inicial da invasora pode ser usado na escala log.</p>
 
 __Tempo de extinção da Invasora na presença e ausência da residente__
-<p> Descrevi o tempo de extinção da espécie invasora em duas situações: considerando o tempo junto com a residente e o tempo parcial sem a residente, nas simulações em que houve substituição da residente. Na primeira situação é considerado a distribuição de tempos de extinção da invasora na presença da competidora, ou seja, os tempos totais até a espécie invasora se extinguir, seja ela a primeira ou última a se extinguir. Na segunda situação considerei apenas o tempo parcial de extinção na ausência da residente, ou seja, considerei que o tempo é zerado no momento do evento de substituição. Uma possível família de distribuição de probabilidades para descrever esses dados é a distribuição Gamma, pois mecanisticamente ela descreve o tempo de espera até que um certo número de eventos ocorra e em certas condições ela pode convergir para uma distribuição exponencial (Bolker 2007). A distribuição Gamma conta com dois parâmetros: de forma e de taxa. O parâmetro da taxa pode ser reescrito como a razão entre o parâmetro da forma e a média (primeiro momento) e a média pode ser definida como o exponencial do descritor linear em um GLM Gamma com função de ligação log (Bossio & Cuervo 2015). Além disso, quando o parâmetro da forma é igual a 1 então a distribuição Gamma converge para uma distribuição exponencial (Bolker 2007). Para descrever o tempo de extinção na primeira situação, considerando a presença da residente, o mais adequado seria considerar um GLMM Gamma log (Informação de Suporte), agrupando os valores das réplicas para uma mesma combinação única de parâmetros, porém isso dificultaria a estimativa do parâmetro da forma e da predição pelo modelo médio. Assim, escolhi usar o GLM Gamma log para obter a predição do modelo média para essa situação em tempo suficiente para elaborar o artigo completo. No GLM Gamma log usei as mesmas preditoras usadas no GLM Binomial logito..</p>
+<p> Descrevi o tempo de extinção da espécie invasora em duas situações: considerando o tempo junto com a residente e o tempo parcial sem a residente, nas simulações em que houve substituição da residente. Na primeira situação é considerado a distribuição de tempos de extinção da invasora na presença da competidora, ou seja, os tempos totais até a espécie invasora se extinguir, seja ela a primeira ou última a se extinguir. Na segunda situação considerei apenas o tempo parcial de extinção na ausência da residente, ou seja, considerei que o tempo é zerado no momento do evento de substituição. Uma possível família de distribuição de probabilidades para descrever esses dados é a distribuição Gamma, pois mecanisticamente ela descreve o tempo de espera até que um certo número de eventos ocorra e em certas condições ela pode convergir para uma distribuição exponencial [@bolker2008]. A distribuição Gamma conta com dois parâmetros: de forma e de taxa. O parâmetro da taxa pode ser reescrito como a razão entre o parâmetro da forma e a média (primeiro momento) e a média pode ser definida como o exponencial do descritor linear em um GLM Gamma com função de ligação log [@bossio2015gamma]. Além disso, quando o parâmetro da forma é igual a 1 então a distribuição Gamma converge para uma distribuição exponencial [@bolker2008]. Para descrever o tempo de extinção na primeira situação, considerando a presença da residente, o mais adequado seria considerar um GLMM Gamma log (Apêndice), agrupando os valores das réplicas para uma mesma combinação única de parâmetros, porém isso dificultaria a estimativa do parâmetro da forma e da predição pelo modelo médio. Assim, escolhi usar o GLM Gamma log para obter a predição do modelo média para essa situação em tempo suficiente para elaborar o artigo completo. No GLM Gamma log usei as mesmas preditoras usadas no GLM Binomial logito.</p>
 
 #### Trabalho Computacional
 
-Todo o trabalho computacional foi feito no ambiente de programação R (REF) usando os pacotes básicos e os pacotes adicionais trackdown (REF), knitr (REF), kableExtra (REF), bbmle (REF), MuMIn (REF), AICcmodavg (REF), lme4(REF), gridExtra(REF), doMC(REF), plyr(REF) e tidyverse (REF).
+Todo o trabalho computacional foi feito no ambiente de programação R [@Rteam] usando os pacotes básicos e os pacotes adicionais trackdown [@trackdown], kableExtra [@kableExtra], bbmle [@bbmle], MuMIn [@MuMIn], AICcmodavg [@AICcmodavg] lme4 [@lme4], gridExtra [@gridExtra], doMC [@doMC], plyr [@plyr] e tidyverse [@tidyverse].
 
 ### Resultados
 
 #### Como a probabilidade de substituição varia com o tamanho inicial da invasora e a assimetria competitiva?
 
 <p>Uma expectativa era que quanto menor o tamanho populacional da espécie invasora menor a probabilidade de substituição, pois a chance de flutuações estocásticas extinguirem a espécie é maior quando a abundância está próxima de zero, mesmo em situações favoráveis. Outra expectativa é baseada nos cenários determinísticos da aproximação de campo médio. Exceto pelo cenário de equivalência das espécies (assimetria competitiva zero) que depende das condições iniciais e do regime de perturbações, dado tempo suficiente, a invasão resultará na substituição ou não da espécie residente, independente do tamanho inicial da espécie invasora. Os parâmetros de competição interespecífica variaram de tal forma que a exclusão da residente ocorreria quando a assimetria competitiva fosse positiva e a exclusão da invasora quando a assimetria competitiva fosse negativa (Figura 1b). Portanto, a expectativa era que a probabilidade de substituição iria aumentar com o tamanho populacional inicial da invasora e da assimetria competitiva.</p>
-<p>A expectativa foi observada, na figura 2 há a probabilidade de substituição predita pelo modelo médio em função do tamanho inicial da invasora (eixo x = M0) e da assimetria competitiva (eixo y = C_nm), no painél principal a probabilidade média, nos dois de baixo o intervalo de confiança assintoticamente normal na escala da função de ligação logito (REF MODAVGPREV). O predito pelo modelo médio mostra que o efeito da assimetria competitiva só se torna relevante quanto maior o tamanho populacional inicial da invasora: apenas a partir de M0 = 20 nota-se aumento da probabilidade de substituição com o aumento de C_nm (Figura 1). o GLM Binomial logito cheio selecionado considerou os efeitos do polinômio de segundo grau da assimetria competitiva e do log do tamanho inicial da espécie invasora sem o efeito da interação dos polinômios. Esse modelo cheio apresentou bom ajuste; e de fato, apesar das proporções observadas apresentarem grande variação (Figura A1), o predito se assemelha ao observado (Figura A2 e A3). A grande variação nas proporções observadas sugere que a capacidade de suporte é pequena, resultando em populações com flutuações elevadas.</p> 
+<p>A expectativa foi observada, na figura 2 há a probabilidade de substituição predita pelo modelo médio em função do tamanho inicial da invasora (eixo x = M0) e da assimetria competitiva (eixo y = C_nm), no painél principal a probabilidade média, nos dois de baixo o intervalo de confiança assintoticamente normal na escala da função de ligação logito [@AICcmodavg]. O predito pelo modelo médio mostra que o efeito da assimetria competitiva só se torna relevante quanto maior o tamanho populacional inicial da invasora: apenas a partir de M0 = 20 nota-se aumento da probabilidade de substituição com o aumento de C_nm (Figura 1). o GLM Binomial logito cheio selecionado considerou os efeitos do polinômio de segundo grau da assimetria competitiva e do log do tamanho inicial da espécie invasora sem o efeito da interação dos polinômios. Esse modelo cheio apresentou bom ajuste; e de fato, apesar das proporções observadas apresentarem grande variação (Figura A1), o predito se assemelha ao observado (Figura A2 e A3). A grande variação nas proporções observadas sugere que a capacidade de suporte é pequena, resultando em populações com flutuações elevadas.</p> 
   
 ```{r figura 2 Probabilidade de substituicao da residente pela invasora}
 # dados
@@ -325,7 +328,7 @@ l_p[[1]] <- df_plot |>
   geom_line(aes(y=mod.avg.pred_exp)) +
   geom_ribbon(aes(ymin=lower.CL_exp_1sp,ymax=upper.CL_exp_1sp),alpha=0.5,color="blue",fill="blue",alpha=0.5) +
   geom_line(aes(y=mod.avg.pred_exp_1sp),color="blue",alpha=0.5) +
-  labs(y="Tempo Extinção (anos)",x="Tamanho inicial invasora", title = "a) Tempo para Ext da inv. na presença da residente e as predições") +
+  labs(y="Tempo Extinção (anos)",x="Tamanho inicial invasora", title = "a) Tempo para Extinção da inv. na presença da residente e as predições") +
   facet_wrap(~C_nm,ncol=3)
 # figura 3 b
 # preparação dos dados
@@ -346,7 +349,7 @@ l_p[[2]] <- df_plot |>
   ggplot(aes(x=TE)) +
   geom_histogram(aes(y=..density..), colour="black", fill="white") +
   geom_density(alpha=.2, fill="#FF6666") +
-  labs(x="Tempo de Extinção",title = "b) Distr. de Tempos para Extinsão da invasora") +
+  labs(x="Tempo de Extinção",title = "b) Distr. de Tempos para Extinção da invasora") +
   facet_grid(M0~C_nm,scales="free")
 # grid arrange
 grid.arrange(grobs=l_p,
@@ -358,16 +361,7 @@ __Figura 3__ Tempo de Extinção da espécie invasora. a) Tempos de Extinção o
 ### Discussão
 
 
-
-
-<!-- #################################################################### -->
-<!-- #################################################################### -->
-Uma expectativa é que a probabilidade da espécie invasora substituir a espécie residente deve aumentar quanto maior o tamanho populacional inicial da invasora e maior a assimetria competitiva em favor da invasora. 
-Com a intenção de avaliar se é possível ter alguma intuição sobre o comportamento do sistema estocástico a partir da aproximação de campo médio, me pergunto como o predito determinístico diverge do observado em uma série de simulações individuais do processo estocástico. 
-Pois, quanto menor o tamanho populacional maior a chance de uma sequência de eventos demográficos leve à extinção da invasora, mesmo quando dominante. E quanto maior a assimetria competitiva em favor da invasora, maior a probabilidade da espécie residente reduzir em abundância por possível evento demográfico.
-<!-- #################################################################### -->
-<!-- ####################################################################  -->
- 
+### Agradecimentos
 
 ### Apêndice
 
@@ -935,3 +929,5 @@ l_p[[2]] <- df_AICcmodavg |>
   facet_wrap(~C_nm,ncol=3)
 grid.arrange(grobs=l_p,ncol=1,top="GLM Gamma(log) TE 2spp: Observado e Predito")
 ```
+
+### Referências
