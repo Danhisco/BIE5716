@@ -85,7 +85,6 @@ P(n,m+1) (m+1) (\delta_m + m \gamma_m / 2 + n C_{m}) +\\ P(n,m-1) (m-1) \beta_m+
 - P(n,m)[n(\beta_n + \delta_n + (n-1) \gamma_n / 2 + m C_{n}) + m(\beta_m + \delta_m + (m-1) \gamma_m / 2 + n C_{m})]
 \end{equation}
 
-
 <p>Na aproximação de campo médio buscamos obter o primeiro momento da distribuição de probabilidade marginal de N, E[N] = <n>, e de M, E[M] = <m>. Para isso é necessário estabelecer algumas definições: $<n> = \sum_{n=0}^{\infty} n P(n,m,t)$; $<n^2> = \sum_{n=0}^{\infty} n^2 P(n,m,t)$; $<m> = \sum_{m=0}^{\infty} m P(n,m,t)$; $<m^2> = \sum_{m=0}^{\infty} m^2 P(n,m,t)$; $<nm> = \sum_{n=0}^{\infty}\sum_{m=0}^{\infty} nm P(n,m,t)$. Para obter o primeiro momento marginal de N ou M basta multiplicar a equação mestra por n ou m e realizar o somatório (apêndice 1), e então é possível obter as equações 2a e 2b:</p>
 
 $$
@@ -175,9 +174,8 @@ write_csv(df_sim0,file = "csv/df_sim0.csv")
 df_sim0 <- df_sim0 |> 
   select(-path)
 # gráficos
-l_p <- list()
 ## cenários simluados
-l_p[[1]] <- df_sim0 |> 
+df_sim0 |> 
   mutate(M0_plot = M0/50) |> 
   ggplot(aes(x=M0_plot,y=C_nm)) + 
   geom_hline(yintercept = 0,color="red",alpha=0.4) +
@@ -246,9 +244,40 @@ Todo o trabalho computacional foi feito no ambiente de programação R [@Rteam] 
   
 ```{r figura 2 Probabilidade de substituicao da residente pela invasora}
 # dados
-df_resultados <- read_csv(file="resultados/df_tFinal.csv")
-df_plot <- read_csv(file="resultados/df_GLMBin_modavg.csv")
 # graficos
+## isolinhas
+df_sim0 <- read_csv("csv/df_sim0.csv")
+df_plot <- df_sim0 |> filter(C_nm %in% c(-0.5,0,0.5) & M0==2) |>  select(-M0)
+beta = df_sim0$beta[1]
+delta = df_sim0$delta[1]
+gamma = df_sim0$gamma[1]
+# equação 4a
+f_IsoResidente <- function(x,C_n) (beta - delta) / C_n - x * gamma/(2*C_n)
+f_IsoInvasora <- function(x,C_m) 2*(beta - delta)/gamma - 2*C_m*x/gamma
+# curve(f_IsoResidente(x,C_n=df_plot$C_n[1]),from = 0,to = 50)
+df_plot <- left_join(x=data.frame(x=rep(0:50,3),id = rep(c(1,6,11),each=51)),
+                     y=df_plot,
+                     by="id") |> 
+  select(-id,-k) |> 
+  mutate(n = f_IsoResidente(x=x,C_n=C_n),
+         m = f_IsoInvasora(x=x,C_m=C_m))
+l_p[[2]] <- df_plot |> 
+  pivot_longer(cols = c("n", "m"),
+               names_to = "species",
+               values_to = "N") |> 
+  mutate(C_nm = factor(C_nm,levels = c(0.5,0,-0.5)),
+         species = factor(species,levels = c("n","m"))) |>
+  ggplot(aes(x=x,y=N,color=species)) +
+  geom_line(alpha=0.5,size=1.2) + 
+  ylim(0,50) + 
+  xlim(0,50) +
+  scale_color_manual(labels = c("n", "m"),
+                     values = c("blue", "red")) +
+  coord_cartesian(expand = FALSE) +
+  labs(x="n",y="m",color="",title="b) Isolinhas Campo Médio") +
+  theme_bw() + theme(legend.position="right") +
+  facet_wrap(~C_nm,ncol=1)
+# probabilidade de substituição 
 max_fill <- max(c(df_plot$mod.avg.pred,df_resultados$c_invasion/100,
                   df_plot$lower.CL,df_plot$upper.CL)) + min(df_resultados$c_invasion/100)
 l_p <- list()
@@ -359,6 +388,33 @@ grid.arrange(grobs=l_p,
 __Figura 3__ Tempo de Extinção da espécie invasora. a) Tempos de Extinção observado na presença da residente (pontos) e predito (vermelho) e o predito para o tempo de extinção na ausência da residente (azul). Eixo x = tamanho inicial da espécie invasora (indivíduos), M0. Eixo y = Tempo de Extinção da invasora (anos), TE. No título dos painéis a assimetria competitiva. b) Gráficos descritivos da distribuição de tempos de extinção nos cenários simulados de assimetria competitiva ou de ausência de residente (título superior dos painéis) e para o tamanho inicial da espécie invasora (título lateral dos painéis). 
 
 ### Discussão
+
+- Quanto maior o tamanho populacional da invasora maior a probabilidade de observar o esperado pela aproximação de campo médio (Figura 1).
+- Mesmo em tamanhos populacionais elevados, a estocasticidade demográfica previne cerca de 40% dos casos esperados nos cenários de assimetria competitiva mais extremos (Figura 1).
+- Esse resultado sugere que o sistema é muito influenciado pela estocasticidade demográfica.
+- Nos cenários de assimetria mais extremos, o tamanho populacional inicial da invasora necessário para substituir a residente em sua capacidade de suporte, o critério de invasibilidade, é o dobro da capacidade de suporte para a competidora inferior.
+- Assim, uma expectativa é que as flutuações nos tamanhos populacionais possam ser bem mais elevados do que a capacidade de suporte
+
+
+```{r grafico exploratorio }
+df_plot <- read_csv("resultados/df_rep_tFinal.csv") |> 
+  filter(invasion == 0 & M0 %in% c(2,25,50) & C_nm %in% c(-0.5,0,0.5)) |> 
+  select(id,k,M0,C_nm,n,t) |> 
+  mutate(across(M0:C_nm,factor),
+         t=t/365.25)
+df_plot |> 
+  ggplot(aes(y=n,x=M0)) +
+  geom_boxplot() +
+  geom_jitter(aes(color=t),alpha=0.6) +
+  facet_wrap(~C_nm) +
+  labs(title="Como a população residente que sobrevive é influenciada pela invasão?",
+       subtitle = "Tamanho Populacional da Residente quando a substituição não ocorreu:",
+       color="t (anos)")
+
+```
+
+
+
 
 
 ### Agradecimentos
