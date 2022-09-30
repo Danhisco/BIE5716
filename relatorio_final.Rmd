@@ -155,7 +155,7 @@ readr::write_csv(df_dinamica,file = path_csv)
 
 
 
-```{r graficos dos cenarios simulados, echo=FALSE,eval=TRUE,fig.width=8,fig.height=4}
+```{r graficos dos cenarios simulados, echo=FALSE,eval=TRUE,fig.width=4,fig.height=4, fig.align = 'center'}
 # dados completo
 df_sim0 <- data.frame(k = 50, beta = 0.7/365.25, delta = 0.69/365.25) |> 
   mutate(gamma = 2 * (beta - delta) / k)
@@ -180,46 +180,14 @@ df_sim0 |>
   ggplot(aes(x=M0_plot,y=C_nm)) + 
   geom_hline(yintercept = 0,color="red",alpha=0.4) +
   geom_point() +
-  labs(title = "a) Cenários Simulados",
+  labs(title = "Cenários Simulados",
        x="initial abundance m (%K = 50)",y=expression((C[n] - C[m])*2/gamma),
        subtitle = "n = resident specie, m = invader specie") +
   theme_bw()
-## isolinhas das espécies no espaço de fase definido por elas
-df_plot <- df_sim0 |> filter(C_nm %in% c(-0.5,0,0.5) & M0==2) |>  select(-M0)
-beta = df_sim0$beta[1]
-delta = df_sim0$delta[1]
-gamma = df_sim0$gamma[1]
-# equação 4a
-f_IsoResidente <- function(x,C_n) (beta - delta) / C_n - x * gamma/(2*C_n)
-f_IsoInvasora <- function(x,C_m) 2*(beta - delta)/gamma - 2*C_m*x/gamma
-# curve(f_IsoResidente(x,C_n=df_plot$C_n[1]),from = 0,to = 50)
-df_plot <- left_join(x=data.frame(x=rep(0:50,3),id = rep(c(1,6,11),each=51)),
-                     y=df_plot,
-                     by="id") |> 
-  select(-id,-k) |> 
-  mutate(n = f_IsoResidente(x=x,C_n=C_n),
-         m = f_IsoInvasora(x=x,C_m=C_m))
-l_p[[2]] <- df_plot |> 
-  pivot_longer(cols = c("n", "m"),
-               names_to = "species",
-               values_to = "N") |> 
-  mutate(C_nm = factor(C_nm,levels = c(0.5,0,-0.5)),
-         species = factor(species,levels = c("n","m"))) |>
-  ggplot(aes(x=x,y=N,color=species)) +
-  geom_line(alpha=0.5,size=1.2) + 
-  ylim(0,50) + 
-  xlim(0,50) +
-  scale_color_manual(labels = c("n", "m"),
-                     values = c("blue", "red")) +
-  coord_cartesian(expand = FALSE) +
-  labs(x="n",y="m",color="",title="b) Isolinhas Campo Médio") +
-  theme_bw() + theme(legend.position="right") +
-  facet_wrap(~C_nm,ncol=1)
-grid.arrange(grobs=l_p,ncol=2,layout_matrix=matrix(c(1,1,1,1,2,2),nrow=1))
+
 ```
   
-__Figura 1__ Cenários simulados de competição interespecífica (a) e as isolinhas obtidas na aproximação de campo médio na  plano de fase (b). a) Eixo y: assimetria competitiva -  a diferença no parâmetro C da espécie residente pela invasora, dividido pelo parâmetro $\gamma$. Eixo x: tamanhos iniciais da espécie invasora de 4% até 100%. b) O plano de fase é definido pelas possíveis abundâncias da espécie residente (eixo x) e da espécie invasora (y).
- 
+__Figura 1__ Cenários simulados de competição interespecífica.  Eixo y: assimetria competitiva -  a diferença no parâmetro C da espécie residente pela invasora, dividido pelo parâmetro $\gamma$. Eixo x: tamanhos iniciais da espécie invasora de 4% até 100%. 
 
 
 
@@ -242,7 +210,7 @@ Todo o trabalho computacional foi feito no ambiente de programação R [@Rteam] 
 <p>Uma expectativa era que quanto menor o tamanho populacional da espécie invasora menor a probabilidade de substituição, pois a chance de flutuações estocásticas extinguirem a espécie é maior quando a abundância está próxima de zero, mesmo em situações favoráveis. Outra expectativa é baseada nos cenários determinísticos da aproximação de campo médio. Exceto pelo cenário de equivalência das espécies (assimetria competitiva zero) que depende das condições iniciais e do regime de perturbações, dado tempo suficiente, a invasão resultará na substituição ou não da espécie residente, independente do tamanho inicial da espécie invasora. Os parâmetros de competição interespecífica variaram de tal forma que a exclusão da residente ocorreria quando a assimetria competitiva fosse positiva e a exclusão da invasora quando a assimetria competitiva fosse negativa (Figura 1b). Portanto, a expectativa era que a probabilidade de substituição iria aumentar com o tamanho populacional inicial da invasora e da assimetria competitiva.</p>
 <p>A expectativa foi observada, na figura 2 há a probabilidade de substituição predita pelo modelo médio em função do tamanho inicial da invasora (eixo x = M0) e da assimetria competitiva (eixo y = C_nm), no painél principal a probabilidade média, nos dois de baixo o intervalo de confiança assintoticamente normal na escala da função de ligação logito [@AICcmodavg]. O predito pelo modelo médio mostra que o efeito da assimetria competitiva só se torna relevante quanto maior o tamanho populacional inicial da invasora: apenas a partir de M0 = 20 nota-se aumento da probabilidade de substituição com o aumento de C_nm (Figura 1). o GLM Binomial logito cheio selecionado considerou os efeitos do polinômio de segundo grau da assimetria competitiva e do log do tamanho inicial da espécie invasora sem o efeito da interação dos polinômios. Esse modelo cheio apresentou bom ajuste; e de fato, apesar das proporções observadas apresentarem grande variação (Figura A1), o predito se assemelha ao observado (Figura A2 e A3). A grande variação nas proporções observadas sugere que a capacidade de suporte é pequena, resultando em populações com flutuações elevadas.</p> 
   
-```{r figura 2 Probabilidade de substituicao da residente pela invasora}
+```{r figura 2 Probabilidade de substituicao da residente pela invasora,fig.align = 'center'}
 # dados
 # graficos
 ## isolinhas
@@ -255,13 +223,14 @@ gamma = df_sim0$gamma[1]
 f_IsoResidente <- function(x,C_n) (beta - delta) / C_n - x * gamma/(2*C_n)
 f_IsoInvasora <- function(x,C_m) 2*(beta - delta)/gamma - 2*C_m*x/gamma
 # curve(f_IsoResidente(x,C_n=df_plot$C_n[1]),from = 0,to = 50)
-df_plot <- left_join(x=data.frame(x=rep(0:50,3),id = rep(c(1,6,11),each=51)),
+df_plot1 <- left_join(x=data.frame(x=rep(0:50,3),id = rep(c(1,6,11),each=51)),
                      y=df_plot,
                      by="id") |> 
   select(-id,-k) |> 
   mutate(n = f_IsoResidente(x=x,C_n=C_n),
          m = f_IsoInvasora(x=x,C_m=C_m))
-l_p[[2]] <- df_plot |> 
+l_p <- list()
+l_p[[1]] <- df_plot1 |> 
   pivot_longer(cols = c("n", "m"),
                names_to = "species",
                values_to = "N") |> 
@@ -274,50 +243,42 @@ l_p[[2]] <- df_plot |>
   scale_color_manual(labels = c("n", "m"),
                      values = c("blue", "red")) +
   coord_cartesian(expand = FALSE) +
-  labs(x="n",y="m",color="",title="b) Isolinhas Campo Médio") +
-  theme_bw() + theme(legend.position="right") +
+  labs(x="n",y="m",color="",title="a) Esperado",subtitle="Isolinhas") +
+  theme_bw() + 
+  theme(legend.position="bottom",
+        plot.title = element_text(hjust=0),
+        plot.subtitle = element_text(hjust=0)) +
   facet_wrap(~C_nm,ncol=1)
 # probabilidade de substituição 
+df_resultados <- read_csv(file="resultados/df_tFinal.csv")
+df_plot <- read_csv(file="resultados/df_GLMBin_modavg.csv")
 max_fill <- max(c(df_plot$mod.avg.pred,df_resultados$c_invasion/100,
                   df_plot$lower.CL,df_plot$upper.CL)) + min(df_resultados$c_invasion/100)
-l_p <- list()
 v_breaks <- c(as.numeric(round(quantile(df_plot$mod.avg.pred,probs = seq(0.10,0.50,length=5)),digits = 2)),max_fill/2)
-l_p[[1]] <- ggplot(mutate(df_plot,label="Average"),
+l_p[[2]] <- ggplot(mutate(df_plot,label="Probabilidade Média"),
                    aes(x=M0,y=C_nm,fill=mod.avg.pred)) +
   geom_tile() +
-  # geom_contour(aes(z=mod.avg.pred),alpha=0.2, colour="black",
-  #              breaks = v_breaks) +
-  # metR::geom_text_contour(aes(z=mod.avg.pred),stroke=0.05,
-  #                         breaks = v_breaks) +
   scale_fill_gradient2(limits = c(0,max_fill),midpoint=max_fill/2, low="red", high="blue",mid="green") +
-  labs(title="Prob. replacement",
-       fill="Probability") +
+  labs(title="b) Observado", subtitle = "GLM Binomial: probabilidade média",
+       fill="Probability",
+       x="initial abundance m",
+       y=expression((C[n] - C[m])*2/gamma)) +
   coord_cartesian(expand = FALSE) +
-  facet_wrap(~label) +
-  theme_classic()
-l_p[[2]] <- ggplot(df_plot,aes(x=M0,y=C_nm,fill=lower.CL)) +
-  geom_tile() +
-  scale_fill_gradient2(limits = c(0,max_fill),midpoint=max_fill/2, low="red", high="blue",mid="green") +
-  labs(title="Lower IC (5%)",
-       fill="Probability") + theme_classic()
-l_p[[3]] <- ggplot(df_plot,aes(x=M0,y=C_nm,fill=upper.CL)) +
-  geom_tile() +
-  scale_fill_gradient2(limits = c(0,max_fill),midpoint=max_fill/2, low="red", high="blue",mid="green") +
-  labs(title="Upper IC (95%)",
-       fill="Probability") + theme_classic()
+  # facet_wrap(~label) +
+  theme_classic() +
+  theme(legend.position = "bottom",
+        axis.title.y = element_text(vjust = -2.5),
+        axis.title.x = element_text(vjust = +2.3),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-5,-5,-5,-5))
 grid.arrange(grobs=l_p,
-             layout_matrix=rbind(rep(1,4),
-                                 rep(1,4),
-                                 rep(1,4),
-                                 rep(1,4),
-                                 c(2,2,3,3),
-                                 c(2,2,3,3))
-             )
+             layout_matrix=matrix(c(1,1,
+                                    2,2,2,2,2,2),nrow = 1))
 
 ```
   
   
-__Figura 2__ Probabilidade de substituição da espécie residente pela invasora. Eixo x = tamanho inicial da espécie invasora, M0. Eixo y = assimetria competitiva, definida como $(C_n - C_m)2/\gamma$, $C_n$ e $C_m$ variaram entre $\gamma/2$ e $\gamma/4$. No painel principal há a probabilidade média predita pelo modelo médio e nos painéis de baixo o intervalo de confiança de 5% e 95% assintoticamente normal na escala da função de ligação logito.
+__Figura 2__ Cenários esperados (a) e situações observadas (b). a) O plano de fase é definido pelas possíveis abundâncias da espécie residente (eixo x, n) e da espécie invasora (eixo y, m). As isolinhas representam os tamanhos populacionais onde o crescimento populacional da espécie é nulo. b) Probabilidade de substituição da espécie residente pela invasora. Eixo x = tamanho inicial da espécie invasora, M0. Eixo y = assimetria competitiva, definida como $(C_n - C_m)2/\gamma$, $C_n$ e $C_m$ variaram entre $\gamma/2$ e $\gamma/4$. No painel principal há a probabilidade média predita pelo modelo médio e nos painéis de baixo o intervalo de confiança de 5% e 95% assintoticamente normal na escala da função de ligação logito.
 
 #### Como a presença da residente reduz o tempo de extinção da invasora?
 
@@ -327,7 +288,7 @@ __Figura 2__ Probabilidade de substituição da espécie residente pela invasora
 
 
 
-```{r figura 3, fig.height=9.85,fig.width=8.5}
+```{r figura 3, fig.height=9.85,fig.width=8.5, fig.align = 'center'}
 # preparação dos dados
 ## df_plot_2spp
 df_plot_2spp <- read_csv("resultados/df_GLMGamma_modavg_2spp.csv") |> 
@@ -390,10 +351,10 @@ __Figura 3__ Tempo de Extinção da espécie invasora. a) Tempos de Extinção o
 ### Discussão
 
 - Quanto maior o tamanho populacional da invasora maior a probabilidade de observar o esperado pela aproximação de campo médio (Figura 1).
+- Nos cenários de assimetria mais extremos, o esperado pela aproximação de campo médio é de que o tamanho populacional inicial da invasora necessário para substituir a residente seja o dobro da capacidade de suporte para a competidora inferior.
 - Mesmo em tamanhos populacionais elevados, a estocasticidade demográfica previne cerca de 40% dos casos esperados nos cenários de assimetria competitiva mais extremos (Figura 1).
-- Esse resultado sugere que o sistema é muito influenciado pela estocasticidade demográfica.
-- Nos cenários de assimetria mais extremos, o tamanho populacional inicial da invasora necessário para substituir a residente em sua capacidade de suporte, o critério de invasibilidade, é o dobro da capacidade de suporte para a competidora inferior.
-- Assim, uma expectativa é que as flutuações nos tamanhos populacionais possam ser bem mais elevados do que a capacidade de suporte
+- Esse resultados sugerem que o sistema é muito influenciado pela estocasticidade demográfica.
+- E de fato, nas ocasiões em que a invasora foi a primeira a se extinguir os tamanhos populacionais da residente podem ultrapassar o dobro da capacidade de suporte, indicando que as flutuações do sistema podem ser na ordem necessária para reverter o 
 
 
 ```{r grafico exploratorio }
@@ -689,6 +650,23 @@ ggplot(df_md,aes(x=c_invasion,y=Pr_invasion)) +
 ```
     
 __Figura A3__ GLM Binomial Logito: predito pelo modelo médio e observado.   
+
+
+```{r }
+l_p[[2]] <- ggplot(df_plot,aes(x=M0,y=C_nm,fill=lower.CL)) +
+  geom_tile() +
+  scale_fill_gradient2(limits = c(0,max_fill),midpoint=max_fill/2, low="red", high="blue",mid="green") +
+  labs(title="Lower IC (5%)",
+       fill="Probability") + theme_classic()
+l_p[[3]] <- ggplot(df_plot,aes(x=M0,y=C_nm,fill=upper.CL)) +
+  geom_tile() +
+  scale_fill_gradient2(limits = c(0,max_fill),midpoint=max_fill/2, low="red", high="blue",mid="green") +
+  labs(title="Upper IC (95%)",
+       fill="Probability") + theme_classic()
+```
+
+__Figura A4__ GLM Binomial Logito: IC 5% e 95% assintoticamente normal na escala da ligação logito (apresentado na escala padrão de probabilidade)
+
 
 #### Tempo de Extinção
 
