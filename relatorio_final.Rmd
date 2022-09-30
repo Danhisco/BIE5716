@@ -354,10 +354,10 @@ __Figura 3__ Tempo de Extinção da espécie invasora. a) Tempos de Extinção o
 - Nos cenários de assimetria mais extremos, o esperado pela aproximação de campo médio é de que o tamanho populacional inicial da invasora necessário para substituir a residente seja o dobro da capacidade de suporte para a competidora inferior.
 - Mesmo em tamanhos populacionais elevados, a estocasticidade demográfica previne cerca de 40% dos casos esperados nos cenários de assimetria competitiva mais extremos (Figura 1).
 - Esse resultados sugerem que o sistema é muito influenciado pela estocasticidade demográfica.
-- E de fato, nas ocasiões em que a invasora foi a primeira a se extinguir os tamanhos populacionais da residente podem ultrapassar o dobro da capacidade de suporte, indicando que as flutuações do sistema podem ser na ordem necessária para reverter o 
+- E de fato, nas ocasiões em que a invasora foi a primeira a se extinguir os tamanhos populacionais da residente podem ultrapassar o dobro da capacidade de suporte (Figura 4), indicando que as flutuações do sistema podem ser na ordem necessária para a competidora inferior fazer grande pressão na competidora superior.
 
 
-```{r grafico exploratorio }
+```{r figura 4, include=FALSE,eval=FALSE}
 df_plot <- read_csv("resultados/df_rep_tFinal.csv") |> 
   filter(invasion == 0 & M0 %in% c(2,25,50) & C_nm %in% c(-0.5,0,0.5)) |> 
   select(id,k,M0,C_nm,n,t) |> 
@@ -365,15 +365,19 @@ df_plot <- read_csv("resultados/df_rep_tFinal.csv") |>
          t=t/365.25)
 df_plot |> 
   ggplot(aes(y=n,x=M0)) +
-  geom_boxplot() +
+  geom_boxplot(aes(y=n,x=M0)) +
   geom_jitter(aes(color=t),alpha=0.6) +
   facet_wrap(~C_nm) +
-  labs(title="Como a população residente que sobrevive é influenciada pela invasão?",
-       subtitle = "Tamanho Populacional da Residente quando a substituição não ocorreu:",
-       color="t (anos)")
+  labs(title="Qual a influência da invasão na população residente?",
+       subtitle = "Tamanho Populacional da residente quando a substituição não ocorreu:",
+       color="t (anos)",
+       x="tamanho inicial da invasora",y="tamanho da residente")
 
 ```
 
+![](fig4.png)
+
+__Figura 4__ Qual a influência da invasão na população residente? Em alguns casos a população residente permanece abaixo da capacidade de suporte mesmo em situações favoráveis.  
 
 
 
