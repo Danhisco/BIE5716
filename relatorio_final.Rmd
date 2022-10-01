@@ -2,11 +2,8 @@
 title: "Generalization of the stochastic logistic model to interspecific competition"
 author: "Danilo Pereira Mori"
 date: "2022-08-20"
-output:
-  pdf_document:
-    latex_engine: xelatex
-  html_document: default
-editor_options:
+output: html_document
+editor_options: 
   chunk_output_type: inline
 bibliography: citations.bib
 csl: plos.csl
@@ -200,7 +197,7 @@ __Probabilidade de substituição da residente pela invasora__
 <p> Para avaliar a probabilidade de substituição da espécie residente pela invasora, considerei a identidade da espécie que permanece após a primeira extinção. Se a espécie que permanece é a invasora então ocorreu um evento de substituição. Para descrever a probabilidade de substituição na simulação das trajetórias individuais usei um GLM binomial logito com o tamanho inicial da invasora e a assimetria competitiva como variáveis preditoras (detalhes no apêndice). Usei uma abordagem baseada em modelo médio [@Dormann2018], em que a partir de um modelo cheio é ajustado todos os possíveis submodelos e então a predição de cada modelo é ponderada pelo peso de evidência do submodelo. O GLM binomial cheio considerou a interação do polinômio de segundo grau de cada preditora; o tamanho populacional inicial da invasora pode ser usado na escala log.</p>
 
 __Tempo de extinção da Invasora na presença e ausência da residente__
-<p> Descrevi o tempo de extinção da espécie invasora em duas situações: considerando o tempo junto com a residente e o tempo parcial sem a residente, nas simulações em que houve substituição da residente. Na primeira situação é considerado a distribuição de tempos de extinção da invasora na presença da competidora, ou seja, os tempos totais até a espécie invasora se extinguir, seja ela a primeira ou última a se extinguir. Na segunda situação considerei apenas o tempo parcial de extinção na ausência da residente, ou seja, considerei que o tempo é zerado no momento do evento de substituição. Uma possível família de distribuição de probabilidades para descrever esses dados é a distribuição Gamma, pois mecanisticamente ela descreve o tempo de espera até que um certo número de eventos ocorra e em certas condições ela pode convergir para uma distribuição exponencial [@bolker2008]. A distribuição Gamma conta com dois parâmetros: de forma e de taxa. O parâmetro da taxa pode ser reescrito como a razão entre o parâmetro da forma e a média (primeiro momento) e a média pode ser definida como o exponencial do descritor linear em um GLM Gamma com função de ligação log [@bossio2015gamma]. Além disso, quando o parâmetro da forma é igual a 1 então a distribuição Gamma converge para uma distribuição exponencial [@bolker2008]. Para descrever o tempo de extinção na primeira situação, considerando a presença da residente, o mais adequado seria considerar um GLMM Gamma log (Apêndice), agrupando os valores das réplicas para uma mesma combinação única de parâmetros, porém isso dificultaria a estimativa do parâmetro da forma e da predição pelo modelo médio. Assim, escolhi usar o GLM Gamma log para obter a predição do modelo média para essa situação em tempo suficiente para elaborar o artigo completo. No GLM Gamma log usei as mesmas preditoras usadas no GLM Binomial logito.</p>
+<p> Descrevi o tempo de extinção da espécie invasora em duas situações: considerando o tempo junto com a residente e o tempo parcial sem a residente, nas simulações em que houve substituição da residente. Na primeira situação é considerado a distribuição de tempos de extinção da invasora na presença da competidora, ou seja, os tempos totais até a espécie invasora se extinguir, seja ela a primeira ou última a se extinguir. Na segunda situação considerei apenas o tempo parcial de extinção na ausência da residente, ou seja, considerei que o tempo é zerado no momento do evento de substituição. Uma possível família de distribuição de probabilidades para descrever esses dados é a distribuição Gamma, pois essa distribuição expressa valores positivos cuja média e variância podem aumentar juntas. A distribuição Gamma possui dois parâmetros: de forma e de taxa  [@bolker2008]. O parâmetro da taxa pode ser reescrito como a razão entre o parâmetro da forma e a média (primeiro momento) e a média pode ser definida como o exponencial do descritor linear em um GLM Gamma com função de ligação log [@bossio2015gamma]. Além disso, quando o parâmetro da forma é igual a 1 então a distribuição Gamma converge para uma distribuição exponencial [@bolker2008]. Para descrever o tempo de extinção na primeira situação, considerando a presença da residente, o mais adequado seria considerar um GLMM Gamma log (Apêndice), agrupando os valores das réplicas para uma mesma combinação única de parâmetros, porém isso dificultaria a estimativa do parâmetro da forma e da predição pelo modelo médio. Assim, escolhi usar o GLM Gamma log para obter a predição do modelo média para essa situação em tempo suficiente para elaborar o artigo completo. No GLM Gamma log usei as mesmas preditoras usadas no GLM Binomial logito.</p>
 
 #### Trabalho Computacional
 
@@ -352,13 +349,24 @@ grid.arrange(grobs=l_p,
 __Figura 3__ Tempo de Extinção da espécie invasora. a) Tempos de Extinção observado na presença da residente (pontos) e predito (vermelho) e o predito para o tempo de extinção na ausência da residente (azul). Eixo x = tamanho inicial da espécie invasora (indivíduos), M0. Eixo y = Tempo de Extinção da invasora (anos), TE. No título dos painéis a assimetria competitiva. b) Gráficos descritivos da distribuição de tempos de extinção nos cenários simulados de assimetria competitiva ou de ausência de residente (título superior dos painéis) e para o tamanho inicial da espécie invasora (título lateral dos painéis). 
 
 ### Discussão
+# Prob. de substituição
+<p>Quanto maior o tamanho populacional da invasora maior a probabilidade de observar o esperado pela aproximação de campo médio para os eventos de substituição (Figura 1). Mesmo em tamanhos populacionais iniciais elevados, a estocasticidade demográfica previne cerca de 40% dos casos esperados nos cenários de assimetria competitiva mais extremos (Figura 1). Segundo o esperado pela aproximação de campo médio nos cenários de assimetria mais extremos, a competidora inferior poderia invadir ou persistir o sistema caso a capacidade de suporte ($2(\beta-\delta)/\gamma$) fosse maior ou igual ao dobro da simulada. Esses resultados sugerem que o sistema é muito influenciado pela estocasticidade demográfica. E de fato, nas ocasiões em que a invasora foi a primeira a se extinguir os tamanhos populacionais da residente podem ultrapassar o dobro da capacidade de suporte (Figura 4), indicando que as flutuações do sistema podem ser na ordem necessária para a competidora inferior fazer grande pressão na competidora superior. </p>
+# Tempo Médio de Extinção
+<p> Outra evidência que mostra que os cenários de assimetria competitiva foram extremos é a aproximação da intervalo de confiança inferior do tempo de extinção médio da invasora na presença da residente com o intervalo de confiança superior na ausência da residente (Figura 3). Me pergunto o quanto é necessário reduzir o coeficiente de competição interespecífica da invasora para que o tempo de extinção médio estimado seja indistinguível na presença ou ausência da residente. Porém,o tempo de extinção médio parece não ser uma boa 
 
-- Quanto maior o tamanho populacional da invasora maior a probabilidade de observar o esperado pela aproximação de campo médio (Figura 1).
-- Nos cenários de assimetria mais extremos, o esperado na aproximação de campo médio para que a competidora inferior possa prevenir a invasão da 
-é de que o tamanho populacional inicial da invasora necessário para substituir a residente seja o dobro da capacidade de suporte da competidora inferior.
-- Mesmo em tamanhos populacionais elevados, a estocasticidade demográfica previne cerca de 40% dos casos esperados nos cenários de assimetria competitiva mais extremos (Figura 1).
-- Esse resultados sugerem que o sistema é muito influenciado pela estocasticidade demográfica.
-- E de fato, nas ocasiões em que a invasora foi a primeira a se extinguir os tamanhos populacionais da residente podem ultrapassar o dobro da capacidade de suporte (Figura 4), indicando que as flutuações do sistema podem ser na ordem necessária para a competidora inferior fazer grande pressão na competidora superior.
+
+
+A descrição do tempo médio usando um GLM Gamma log não foi uma boa aproximação. A distribuição Gamma pode ser interpretada mecanisticamente como a distribuição de tempos para que um determinado número de eventos em um processo Poisson, em que as probabilidade de um evento ocorrer são constantes
+
+, pois mecanisticamente ela descreve o tempo de espera até que um certo número de eventos ocorra em um processo Poisson
+
+</p>
+# efeito do tamanho populacional: pq só quando o tamanho 
+<p>
+</p>
+#
+<p> Nos 3 conjuntos de dados descritos estatisticamente (Figuras 2 e 3) o modelo cheio selecionado não considerava a interação entre as preditoras, assimetria competitiva (C_nm=$2(C_n-C_m)/\gamma$) e tamanho inicial da espécie invasora (M0). Me pergunto se nos cenários de assimetria competitiva houvesse coexistência instável ou estável os modelo estatísticos cheios selecionados não teriam a interação entre as preditoras C_nm e M0. Nos cenários de coexistência instável o predito pela aproximação de campo médio é de que exista uma separatriz de tamanhos iniciais das populações em competição que iria determinar qual das duas espécies seria excluída. A posição da separatriz depende da relação das isolinhas; se a partir do caso de assimetria competitiva nula aumentássemos ambos os coeficientes de competição ($C_n$ e $C_m$) poderíamos criar uma situação de coexistência instável. Me pergunto o quanto a estocasticidade demográfica poderia prevenir a realização destes cenários. Se caso ambos os coeficientes de competição fossem reduzidos, então poderíamos criar uma situação de coexistência estável. Uma expectativa do cenário de coexistência estável nas simulações estocásticas é que a espécie com menor tamanho populacional no equilíbrio tenha maior chance de se extinguir. </p>
+
 
 
 ```{r figura 4, include=FALSE,eval=FALSE}
@@ -659,7 +667,6 @@ ggplot(df_md,aes(x=c_invasion,y=Pr_invasion)) +
     
 __Figura A3__ GLM Binomial Logito: predito pelo modelo médio e observado.   
 
-
 ```{r }
 l_p[[2]] <- ggplot(df_plot,aes(x=M0,y=C_nm,fill=lower.CL)) +
   geom_tile() +
@@ -674,7 +681,6 @@ l_p[[3]] <- ggplot(df_plot,aes(x=M0,y=C_nm,fill=upper.CL)) +
 ```
 
 __Figura A4__ GLM Binomial Logito: IC 5% e 95% assintoticamente normal na escala da ligação logito (apresentado na escala padrão de probabilidade)
-
 
 #### Tempo de Extinção
 
